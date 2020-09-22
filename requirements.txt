@@ -3,4 +3,4 @@ numpy
 pydub
 pyyaml
 librosa
-wandb
+wandb>=0.10.2
