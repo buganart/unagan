@@ -76,6 +76,13 @@ We use a separation model we developed. You can use open-sourced ones such as [O
     python scripts/make_dataset.py
     python scripts/train.hierarchical_with_cycle.py
 
+
+## Resume training
+You need the wandb `run` `id`, then
+
+    python scripts/train.hierarchical_with_cycle.py --model-id 1r4b1ojr
+
+
 ## Audio samples
 
 Some generated audio samples can be found in:

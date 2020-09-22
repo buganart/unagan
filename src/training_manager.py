@@ -345,17 +345,16 @@ class TrainingManager(object):
 
         return resumed_epoch
 
-    def resume_training(self, resumed_model_id, resumed_save_dir):
-        '''
+    def resume_training(self, base_model_dir):
+        """
         resumed_model_id:
             resume training the model with model id <model_id>
-        '''
+        """
 
-        base_model_dir = os.path.join(resumed_save_dir, resumed_model_id)
-        param_dir = os.path.join(base_model_dir, 'model')
+        param_dir = os.path.join(base_model_dir, "model")
 
         # Get record
-        record_fp = os.path.join(base_model_dir, 'record', 'record.latest.json')
+        record_fp = os.path.join(base_model_dir, "record", "record.latest.json")
         records = read_json(record_fp)
         records = {int(key): records[key] for key in records}
         self.records = records
