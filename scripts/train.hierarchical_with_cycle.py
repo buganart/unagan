@@ -553,16 +553,7 @@ if __name__ == "__main__":
     parser.add_argument("--batches-per-epoch", type=int, default=500)
     args = parser.parse_args()
 
-    model_id = args.model_id
-
-    if model_id is None:
-        model_id = get_current_time()
-        resume_training = False
-    else:
-        resume_training = True
-
     script_path = os.path.realpath(__file__)
-    print(model_id)
     print(script_path)
 
     data_dir = "./training_data/exp_data"
@@ -626,18 +617,23 @@ if __name__ == "__main__":
     config = {**{k: locs[k] for k in config_keys}, **args.__dict__}
     pprint.pprint(config)
 
-    wandb.init(
-        entity="demiurge", project="unagan", config=config,
-    )
+    model_id = args.model_id
 
-    base_out_dir = wandb.run.dir
+    if model_id is None:
+        resume_training = False
+        wandb.init(
+            entity="demiurge", project="unagan", config=config,
+        )
+    else:
+        resume_training = True
+        wandb.init(
+            id=model_id, entity="demiurge", project="unagan", config=config,
+        )
+        model_id = wandb.run.id
+
+    output_dir = wandb.run.dir
 
     # Dirs and fps
-    save_dir = os.path.join(base_out_dir, "save")
-    output_dir = os.path.join(save_dir, model_id)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
     iterator_tr, num_tr, iterator_va, _ = get_voc_datasets(
         data_dir, feat_type, batch_size, num_va
     )
@@ -686,8 +682,17 @@ if __name__ == "__main__":
 
     # ### Resume training ###
     if resume_training:
-        print(save_dir, model_id)
-        init_epoch = manager.resume_training(model_id, save_dir)
+        for path in [
+            "record/record.latest.json",
+            "model/params.Generator.latest.torch",
+            "model/params.Discriminator.latest.torch",
+            "model/params.Encoder.latest.torch",
+            "model/params.BEGANRecorder.latest.torch",
+        ]:
+            print(f"Restoring {path}")
+            wandb.restore(path)
+
+        init_epoch = manager.resume_training(output_dir)
         print(f"Resumed k: {k}")
     else:
         init_epoch = 1
