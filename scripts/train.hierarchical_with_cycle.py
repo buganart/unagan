@@ -617,9 +617,7 @@ if __name__ == "__main__":
     config = {**{k: locs[k] for k in config_keys}, **args.__dict__}
     pprint.pprint(config)
 
-    model_id = args.model_id
-
-    if model_id is None:
+    if args.model_id is None:
         resume_training = False
         wandb.init(
             entity="demiurge", project="unagan", config=config,
@@ -627,9 +625,8 @@ if __name__ == "__main__":
     else:
         resume_training = True
         wandb.init(
-            id=model_id, entity="demiurge", project="unagan", config=config,
+            id=args.model_id, entity="demiurge", project="unagan", config=config,
         )
-        model_id = wandb.run.id
 
     output_dir = wandb.run.dir
 
@@ -700,7 +697,6 @@ if __name__ == "__main__":
 
     # ### Train ###
     for epoch in range(init_epoch, 1 + num_epochs):
-        print(model_id)
         t0 = time.time()
 
         # ### Training ###
@@ -854,10 +850,4 @@ if __name__ == "__main__":
         # ###########################################################################
 
         t1 = time.time()
-        print(
-            "Epoch: {} finished. Time: {:.3f}. Model ID: {}".format(
-                epoch, t1 - t0, model_id
-            )
-        )
-
-    print(model_id)
+        print("Epoch: {} finished. Time: {:.3f}".format(epoch, t1 - t0,))
