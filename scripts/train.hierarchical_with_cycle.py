@@ -619,14 +619,13 @@ if __name__ == "__main__":
 
     if args.model_id is None:
         resume_training = False
-        wandb.init(
-            entity="demiurge", project="unagan", config=config,
-        )
     else:
         resume_training = True
-        wandb.init(
-            id=args.model_id, entity="demiurge", project="unagan", config=config,
-        )
+
+    wandb.init(
+        id=args.model_id, entity="demiurge", project="unagan", config=config,
+    )
+    print(f"wandb: Run id: {wandb.run.id}")
 
     output_dir = wandb.run.dir
 
