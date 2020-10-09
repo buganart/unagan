@@ -134,7 +134,7 @@ def save_best_params(fp, network, optimizer, epoch, value, metric):
         'value.{}'.format(metric): value
     }
     torch.save(out, fp)
-
+    wandb.save(fp)
 
 def save_params(fp, network, optimizer):
     net_state_dict = network.state_dict()
@@ -149,16 +149,18 @@ def save_params(fp, network, optimizer):
         'state_dict.optimizer': opt_state_dict,
     }
     torch.save(out, fp)
+    wandb.save(fp)
 
 
-def load_params(fp, device_id):
+def load_params(filename, device_id):
+    checkpoint_file = wandb.restore(checkpoint_path)
     device = torch.device(device_id)
-    params = torch.load(fp, map_location=device)
+    params = torch.load(checkpoint_file.name, map_location=device)
     return params
 
 
-def load_model(fp, network, optimizer=None, device_id='cpu'):
-    obj = load_params(fp, device_id)
+def load_model(filename, network, optimizer=None, device_id='cpu'):
+    obj = load_params(filename, device_id)
     model_state_dict = obj['state_dict.model']
     optimizer_state_dict = obj['state_dict.optimizer']
 
@@ -189,6 +191,7 @@ def get_structure_description(network):
 def save_structure_description(out_fp, network):
     des = get_structure_description(network)
     write_lines(out_fp, des)
+    wandb.save(out_fp)
 
 
 def save_record(fp, record):
@@ -364,8 +367,8 @@ class TrainingManager(object):
 
         # Resume networks and optimizers
         for name, network, optimizer in zip(self.names, self.networks, self.optimizers):
-            param_fp = os.path.join(param_dir, 'params.{}.latest.torch'.format(name))
-            load_model(param_fp, network, optimizer)
+            param_filename = os.path.join("model", 'params.{}.latest.torch'.format(name))
+            load_model(param_filename, network, optimizer)
 
         # Set best loss and best score
         self.best_va_metrics = records[resumed_epoch]['record']['best_va_metrics']
