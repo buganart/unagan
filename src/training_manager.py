@@ -9,6 +9,7 @@ from copy import deepcopy
 
 import numpy as np
 import torch
+import wandb
 
 
 # IO
@@ -152,15 +153,14 @@ def save_params(fp, network, optimizer):
     wandb.save(fp)
 
 
-def load_params(filename, device_id):
-    checkpoint_file = wandb.restore(checkpoint_path)
+def load_params(file_path, device_id):
     device = torch.device(device_id)
-    params = torch.load(checkpoint_file.name, map_location=device)
+    params = torch.load(file_path, map_location=device)
     return params
 
 
-def load_model(filename, network, optimizer=None, device_id='cpu'):
-    obj = load_params(filename, device_id)
+def load_model(file_path, network, optimizer=None, device_id='cpu'):
+    obj = load_params(file_path, device_id)
     model_state_dict = obj['state_dict.model']
     optimizer_state_dict = obj['state_dict.optimizer']
 
@@ -367,8 +367,8 @@ class TrainingManager(object):
 
         # Resume networks and optimizers
         for name, network, optimizer in zip(self.names, self.networks, self.optimizers):
-            param_filename = os.path.join("model", 'params.{}.latest.torch'.format(name))
-            load_model(param_filename, network, optimizer)
+            file_path = os.path.join(param_dir, 'params.{}.latest.torch'.format(name))
+            load_model(file_path, network, optimizer)
 
         # Set best loss and best score
         self.best_va_metrics = records[resumed_epoch]['record']['best_va_metrics']
