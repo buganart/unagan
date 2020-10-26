@@ -2,6 +2,7 @@
 import argparse
 import os
 import pprint
+import warnings
 
 import time
 import pickle
@@ -628,6 +629,11 @@ if __name__ == "__main__":
     print(f"wandb: Run id: {wandb.run.id}")
 
     output_dir = wandb.run.dir
+
+    for path in ["model/*", "record/*", "*.csv"]:
+        print(f"Registering paths matching {path} to save in wandb.")
+        wandb.save(path)
+    print('Please ignore the warning of type: "wandb: WARNING Symlinked 0 file ..."')
 
     # Dirs and fps
     iterator_tr, num_tr, iterator_va, _ = get_voc_datasets(
