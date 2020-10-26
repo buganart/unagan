@@ -630,10 +630,12 @@ if __name__ == "__main__":
 
     output_dir = wandb.run.dir
 
-    for path in ["model/*", "record/*", "*.csv"]:
-        print(f"Registering paths matching {path} to save in wandb.")
-        wandb.save(path)
-    print('Please ignore the warning of type: "wandb: WARNING Symlinked 0 file ..."')
+    # XXX Saving models this way breaks torch restore functionality!
+    # Only use it for other files.
+    for files_to_save in ["record/*"]:
+        print(f"Registering paths matching {files_to_save} to save in wandb.")
+        wandb.save(files_to_save)
+    print('The warning of type: "wandb: WARNING Symlinked 0 file ..." is expected.')
 
     # Dirs and fps
     iterator_tr, num_tr, iterator_va, _ = get_voc_datasets(

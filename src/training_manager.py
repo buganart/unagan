@@ -9,6 +9,7 @@ from copy import deepcopy
 
 import numpy as np
 import torch
+import wandb
 
 
 # IO
@@ -134,6 +135,7 @@ def save_best_params(fp, network, optimizer, epoch, value, metric):
         'value.{}'.format(metric): value
     }
     torch.save(out, fp)
+    wandb.save(fp)
 
 def save_params(fp, network, optimizer):
     net_state_dict = network.state_dict()
@@ -148,6 +150,7 @@ def save_params(fp, network, optimizer):
         'state_dict.optimizer': opt_state_dict,
     }
     torch.save(out, fp)
+    wandb.save(fp)
 
 
 def load_params(file_path, device_id):
@@ -188,6 +191,7 @@ def get_structure_description(network):
 def save_structure_description(out_fp, network):
     des = get_structure_description(network)
     write_lines(out_fp, des)
+    wandb.save(out_fp)
 
 
 def save_record(fp, record):
