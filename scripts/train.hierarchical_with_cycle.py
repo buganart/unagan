@@ -618,10 +618,10 @@ if __name__ == "__main__":
     config = {**{k: locs[k] for k in config_keys}, **args.__dict__}
     pprint.pprint(config)
 
-    if args.model_id is None:
-        resume_training = False
-    else:
+    if args.model_id:
         resume_training = True
+    else:
+        resume_training = False
 
     wandb.init(
         id=args.model_id, entity="demiurge", project="unagan", config=config,
