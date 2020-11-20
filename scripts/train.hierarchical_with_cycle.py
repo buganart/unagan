@@ -552,6 +552,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-id", type=str)
     parser.add_argument("--batches-per-epoch", type=int, default=500)
+    parser.add_argument("--notes", type=str)
     args = parser.parse_args()
 
     script_path = os.path.realpath(__file__)
@@ -619,14 +620,22 @@ if __name__ == "__main__":
     pprint.pprint(config)
 
     if args.model_id:
+        print(f"Resuming wandb run ID {args.model_id}.")
         resume_training = True
     else:
+        print("Starting new run from scratch.")
         resume_training = False
 
     wandb.init(
-        id=args.model_id, entity="demiurge", project="unagan", config=config,
+        id=args.model_id,
+        entity="demiurge",
+        project="unagan",
+        config=config,
+        resume=resume_training,
+        notes=args.notes,
     )
-    print(f"wandb: Run id: {wandb.run.id}")
+
+    print(f"wandb: Run ID: {wandb.run.id}")
 
     output_dir = wandb.run.dir
 
@@ -696,11 +705,15 @@ if __name__ == "__main__":
             print(f"Restoring {path}")
             wandb.restore(path)
 
-        init_epoch = manager.resume_training(output_dir)
+        # Rolling back an unfinished epoch may cause wandb to drop logs.
+        # Moving to the next epoch.
+        init_epoch = manager.resume_training(output_dir) + 1
         print(f"Resumed k: {k}")
     else:
         init_epoch = 1
         manager.save_initial()
+
+    print(f"Initial epoch: {init_epoch}")
 
     # ### Train ###
     for epoch in range(init_epoch, 1 + num_epochs):
