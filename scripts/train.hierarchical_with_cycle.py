@@ -8,6 +8,7 @@ import time
 import pickle
 import random
 from collections import OrderedDict
+from pathlib import Path
 
 import sys
 
@@ -553,6 +554,9 @@ if __name__ == "__main__":
     parser.add_argument("--model-id", type=str)
     parser.add_argument("--batches-per-epoch", type=int, default=500)
     parser.add_argument("--notes", type=str)
+    parser.add_argument(
+        "--wandb-dir", type=str, default="wandb", help="Directory with wandb runs"
+    )
     args = parser.parse_args()
 
     script_path = os.path.realpath(__file__)
@@ -626,7 +630,10 @@ if __name__ == "__main__":
         print("Starting new run from scratch.")
         resume_training = False
 
+    Path(args.wandb_dir).mkdir(parents=True, exist_ok=True)
+
     wandb.init(
+        dir=args.wandb_dir,
         id=args.model_id,
         entity="demiurge",
         project="unagan",
