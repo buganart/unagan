@@ -60,7 +60,7 @@ class VocDataset(Dataset):
         return len(self.metadata)
 
 
-def get_voc_datasets(path, feat_type, batch_size, va_samples):
+def get_voc_datasets(path, feat_type, batch_size):
 
     dataset_fp = os.path.join(path, f"dataset.pkl")
     in_dir = os.path.join(path, feat_type)
@@ -72,8 +72,10 @@ def get_voc_datasets(path, feat_type, batch_size, va_samples):
     random.seed(1234)
     random.shuffle(dataset_ids)
 
-    va_ids = dataset_ids[-va_samples:]
-    tr_ids = dataset_ids[:-va_samples]
+    split_at = int(len(dataset_ids) * 0.9)
+
+    tr_ids = dataset_ids[:split_at]
+    va_ids = dataset_ids[split_at:]
 
     tr_dataset = VocDataset(tr_ids, in_dir)
     va_dataset = VocDataset(va_ids, in_dir)
@@ -654,8 +656,8 @@ if __name__ == "__main__":
     print('The warning of type: "wandb: WARNING Symlinked 0 file ..." is expected.')
 
     # Dirs and fps
-    iterator_tr, num_tr, iterator_va, _ = get_voc_datasets(
-        data_dir, feat_type, batch_size, num_va
+    iterator_tr, num_tr, iterator_va, num_va = get_voc_datasets(
+        data_dir, feat_type, batch_size
     )
     print("tr: {}, va: {}".format(num_tr, num_va))
 
