@@ -75,6 +75,10 @@ def convert_file(extract_func, sampling_rate, path):
         y, _ = librosa.load(path, sr=sampling_rate)
 
     peak = np.abs(y).max()
+
+    if peak < 1e-10:
+        raise ValueError(f"Audio signal amplitude too low: {peak}")
+
     if peak_norm or peak > 1.0:
         y /= peak
 
@@ -100,8 +104,12 @@ def process_clip(extract_func, sampling_rate, base_out_dir, clip_path):
         print(f"Clip {out_fp} exists. Done before.")
         return
 
-    mel = convert_file(extract_func, sampling_rate, clip_path)
-    np.save(out_fp, mel, allow_pickle=False)
+    try:
+        mel = convert_file(extract_func, sampling_rate, clip_path)
+    except ValueError as exc:
+        print(f"Error processing {clip_path}: {exc}")
+    else:
+        np.save(out_fp, mel, allow_pickle=False)
 
 
 if __name__ == "__main__":

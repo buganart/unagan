@@ -2,11 +2,13 @@
 import argparse
 import os
 import pprint
+import warnings
 
 import time
 import pickle
 import random
 from collections import OrderedDict
+from pathlib import Path
 
 import sys
 
@@ -58,7 +60,7 @@ class VocDataset(Dataset):
         return len(self.metadata)
 
 
-def get_voc_datasets(path, feat_type, batch_size, va_samples):
+def get_voc_datasets(path, feat_type, batch_size):
 
     dataset_fp = os.path.join(path, f"dataset.pkl")
     in_dir = os.path.join(path, feat_type)
@@ -70,8 +72,10 @@ def get_voc_datasets(path, feat_type, batch_size, va_samples):
     random.seed(1234)
     random.shuffle(dataset_ids)
 
-    va_ids = dataset_ids[-va_samples:]
-    tr_ids = dataset_ids[:-va_samples]
+    split_at = int(len(dataset_ids) * 0.9)
+
+    tr_ids = dataset_ids[:split_at]
+    va_ids = dataset_ids[split_at:]
 
     tr_dataset = VocDataset(tr_ids, in_dir)
     va_dataset = VocDataset(va_ids, in_dir)
@@ -551,6 +555,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-id", type=str)
     parser.add_argument("--batches-per-epoch", type=int, default=500)
+    parser.add_argument("--notes", type=str)
+    parser.add_argument(
+        "--wandb-dir", type=str, default="wandb", help="Directory with wandb runs"
+    )
     args = parser.parse_args()
 
     script_path = os.path.realpath(__file__)
@@ -617,21 +625,39 @@ if __name__ == "__main__":
     config = {**{k: locs[k] for k in config_keys}, **args.__dict__}
     pprint.pprint(config)
 
-    if args.model_id is None:
-        resume_training = False
-    else:
+    if args.model_id:
+        print(f"Resuming wandb run ID {args.model_id}.")
         resume_training = True
+    else:
+        print("Starting new run from scratch.")
+        resume_training = False
+
+    Path(args.wandb_dir).mkdir(parents=True, exist_ok=True)
 
     wandb.init(
-        id=args.model_id, entity="demiurge", project="unagan", config=config,
+        dir=args.wandb_dir,
+        id=args.model_id,
+        entity="demiurge",
+        project="unagan",
+        config=config,
+        resume=resume_training,
+        notes=args.notes,
     )
-    print(f"wandb: Run id: {wandb.run.id}")
+
+    print(f"wandb: Run ID: {wandb.run.id}")
 
     output_dir = wandb.run.dir
 
+    # XXX Saving models this way breaks torch restore functionality!
+    # Only use it for other files.
+    for files_to_save in ["record/*"]:
+        print(f"Registering paths matching {files_to_save} to save in wandb.")
+        wandb.save(files_to_save)
+    print('The warning of type: "wandb: WARNING Symlinked 0 file ..." is expected.')
+
     # Dirs and fps
-    iterator_tr, num_tr, iterator_va, _ = get_voc_datasets(
-        data_dir, feat_type, batch_size, num_va
+    iterator_tr, num_tr, iterator_va, num_va = get_voc_datasets(
+        data_dir, feat_type, batch_size
     )
     print("tr: {}, va: {}".format(num_tr, num_va))
 
@@ -688,11 +714,15 @@ if __name__ == "__main__":
             print(f"Restoring {path}")
             wandb.restore(path)
 
-        init_epoch = manager.resume_training(output_dir)
+        # Rolling back an unfinished epoch may cause wandb to drop logs.
+        # Moving to the next epoch.
+        init_epoch = manager.resume_training(output_dir) + 1
         print(f"Resumed k: {k}")
     else:
         init_epoch = 1
         manager.save_initial()
+
+    print(f"Initial epoch: {init_epoch}")
 
     # ### Train ###
     for epoch in range(init_epoch, 1 + num_epochs):
