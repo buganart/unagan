@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import os
+
 gid = 0
-os.environ['CUDA_VISIBLE_DEVICES'] = str(gid)
+os.environ["CUDA_VISIBLE_DEVICES"] = str(gid)
 
 import time
 import pickle
@@ -10,7 +11,8 @@ import random
 from collections import OrderedDict
 
 import sys
-sys.path.append('..')
+
+sys.path.append("..")
 from src.training_manager import TrainingManager, get_current_time
 
 import numpy as np
@@ -22,7 +24,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils import clip_grad_norm_
 from torch.nn.utils import spectral_norm
 
-torch.multiprocessing.set_sharing_strategy('file_system')
+torch.multiprocessing.set_sharing_strategy("file_system")
 
 
 class VocDataset(Dataset):
@@ -32,7 +34,7 @@ class VocDataset(Dataset):
 
     def __getitem__(self, index):
         id = self.metadata[index]
-        voc_fp = os.path.join(self.path, id, 'vocals.npy')
+        voc_fp = os.path.join(self.path, id, "vocals.npy")
 
         voc = np.load(voc_fp)
 
@@ -44,9 +46,9 @@ class VocDataset(Dataset):
 
 def get_voc_datasets(path, feat_type, batch_size, va_samples):
 
-    dataset_fp = os.path.join(path, 'dataset.pkl')
+    dataset_fp = os.path.join(path, "dataset.pkl")
     in_dir = os.path.join(path, feat_type)
-    with open(dataset_fp, 'rb') as f:
+    with open(dataset_fp, "rb") as f:
         dataset = pickle.load(f)
 
     dataset_ids = [x[0] for x in dataset]
@@ -68,7 +70,8 @@ def get_voc_datasets(path, feat_type, batch_size, va_samples):
         num_workers=5,
         shuffle=True,
         drop_last=True,
-        pin_memory=True)
+        pin_memory=True,
+    )
 
     iterator_va = DataLoader(
         va_dataset,
@@ -76,7 +79,8 @@ def get_voc_datasets(path, feat_type, batch_size, va_samples):
         num_workers=0,
         shuffle=False,
         drop_last=True,
-        pin_memory=True)
+        pin_memory=True,
+    )
 
     return iterator_tr, num_tr, iterator_va, num_va
 
@@ -113,11 +117,13 @@ def validate():
 
             fake_voc = netG(z)
 
-            gloss = torch.mean(torch.abs(netD(fake_voc)-fake_voc))
+            gloss = torch.mean(torch.abs(netD(fake_voc) - fake_voc))
 
             # ### Train discriminators ###
-            real_dloss = torch.mean(torch.abs(netD(voc)-voc))
-            fake_dloss = torch.mean(torch.abs(netD(fake_voc.detach())-fake_voc.detach()))
+            real_dloss = torch.mean(torch.abs(netD(voc) - voc))
+            fake_dloss = torch.mean(
+                torch.abs(netD(fake_voc.detach()) - fake_voc.detach())
+            )
 
             dloss = real_dloss - k * fake_dloss
 
@@ -125,26 +131,32 @@ def validate():
             _, convergence = recorder(real_dloss, fake_dloss, update_k=False)
 
             # ### Losses ###
-            losses = OrderedDict([
-                ('G', gloss),
-                ('D', dloss),
-                ('RealD', real_dloss),
-                ('FakeD', fake_dloss),
-                ('Convergence', convergence),
-            ])
+            losses = OrderedDict(
+                [
+                    ("G", gloss),
+                    ("D", dloss),
+                    ("RealD", real_dloss),
+                    ("FakeD", fake_dloss),
+                    ("Convergence", convergence),
+                ]
+            )
 
             # ### Misc ###
             count_all_va += bs
 
             # Accumulate losses
-            losses_va = OrderedDict([(loss_name, lo.item()) for loss_name, lo in losses.items()])
+            losses_va = OrderedDict(
+                [(loss_name, lo.item()) for loss_name, lo in losses.items()]
+            )
 
             for loss_name, lo in losses_va.items():
-                sum_losses_va[loss_name] += lo*bs
+                sum_losses_va[loss_name] += lo * bs
 
             if i_batch % 10 == 0:
-                print('{}/{}'.format(i_batch, num_batches_va))
-    mean_losses_va = OrderedDict([(loss_name, slo / count_all_va) for loss_name, slo in sum_losses_va.items()])
+                print("{}/{}".format(i_batch, num_batches_va))
+    mean_losses_va = OrderedDict(
+        [(loss_name, slo / count_all_va) for loss_name, slo in sum_losses_va.items()]
+    )
 
     # Restore rng state
     torch.set_rng_state(cpu_rng_state_tr)
@@ -171,7 +183,7 @@ class BEGANRecorder(nn.Module):
     def forward(self, real_dloss, fake_dloss, update_k=False):
         # convergence
         diff = self.gamma * real_dloss - fake_dloss
-        convergence = (real_dloss + torch.abs(diff))
+        convergence = real_dloss + torch.abs(diff)
 
         # Update k
         if update_k:
@@ -183,7 +195,7 @@ class BEGANRecorder(nn.Module):
 class RCBlock(nn.Module):
     def __init__(self, feat_dim, ks, dilation, num_groups):
         super().__init__()
-        ksm1 = ks-1
+        ksm1 = ks - 1
         mfd = feat_dim
         di = dilation
         self.num_groups = num_groups
@@ -191,13 +203,15 @@ class RCBlock(nn.Module):
         self.relu = nn.LeakyReLU()
 
         self.rec = nn.GRU(mfd, mfd, num_layers=1, batch_first=True, bidirectional=True)
-        self.conv = nn.Conv1d(mfd, mfd, ks, 1, ksm1*di//2, dilation=di, groups=num_groups)
+        self.conv = nn.Conv1d(
+            mfd, mfd, ks, 1, ksm1 * di // 2, dilation=di, groups=num_groups
+        )
         self.gn = nn.GroupNorm(num_groups, mfd)
 
     def init_hidden(self, batch_size, hidden_size):
         num_layers = 1
         num_directions = 2
-        hidden = torch.zeros(num_layers*num_directions, batch_size, hidden_size)
+        hidden = torch.zeros(num_layers * num_directions, batch_size, hidden_size)
         hidden.normal_(0, 1)
         return hidden
 
@@ -210,7 +224,7 @@ class RCBlock(nn.Module):
         r, _ = self.rec(r, hidden)
         r = r.transpose(1, 2).view(bs, 2, mfd, nf).sum(1)
         c = self.relu(self.gn(self.conv(r)))
-        x = x+r+c
+        x = x + r + c
 
         return x
 
@@ -255,7 +269,9 @@ class NetG(nn.Module):
 
 
 class BNSNConv2dDBlock(nn.Module):
-    def __init__(self, input_dim, output_dim, kernel_size, frequency_stride, time_dilation):
+    def __init__(
+        self, input_dim, output_dim, kernel_size, frequency_stride, time_dilation
+    ):
         super().__init__()
         ks = kernel_size
         ksm1d2 = (ks - 1) // 2
@@ -267,11 +283,16 @@ class BNSNConv2dDBlock(nn.Module):
         self.frequency_stride = frequency_stride
 
         block = [
-            spectral_norm(nn.Conv2d(
-                input_dim, output_dim, ks,
-                (frequency_stride, 1),
-                (1, time_dilation*ksm1d2),
-                dilation=(1, time_dilation))),
+            spectral_norm(
+                nn.Conv2d(
+                    input_dim,
+                    output_dim,
+                    ks,
+                    (frequency_stride, 1),
+                    (1, time_dilation * ksm1d2),
+                    dilation=(1, time_dilation),
+                )
+            ),
             nn.BatchNorm2d(output_dim),
             nn.LeakyReLU(),
         ]
@@ -296,8 +317,11 @@ class BNSNConv1dDBlock(nn.Module):
         self.dilation = dilation
 
         block = [
-            spectral_norm(nn.Conv1d(input_dim, output_dim, ks,
-                                    1, dilation*ksm1d2, dilation=dilation)),
+            spectral_norm(
+                nn.Conv1d(
+                    input_dim, output_dim, ks, 1, dilation * ksm1d2, dilation=dilation
+                )
+            ),
             nn.BatchNorm1d(output_dim),
             nn.LeakyReLU(),
         ]
@@ -329,7 +353,7 @@ class NetD(nn.Module):
         ]
 
         blocks1d = [
-            BNSNConv1dDBlock(64*10, mfd, 3, 1),
+            BNSNConv1dDBlock(64 * 10, mfd, 3, 1),
             BNSNConv1dDBlock(mfd, mfd, ks, 16),
             BNSNConv1dDBlock(mfd, mfd, ks, 32),
             BNSNConv1dDBlock(mfd, mfd, ks, 64),
@@ -342,10 +366,10 @@ class NetD(nn.Module):
         self.head = spectral_norm(nn.Conv1d(mfd, input_size, 3, 1, 1))
 
     def forward(self, x):
-        '''
+        """
         x.shape=(batch_size, feat_dim, num_frames)
         cond.shape=(batch_size, cond_dim, num_frames)
-        '''
+        """
         bs, fd, nf = x.size()
 
         # ### Process generated ###
@@ -367,7 +391,7 @@ class NetD(nn.Module):
         return out
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     model_id = None
 
     if model_id is None:
@@ -381,23 +405,25 @@ if __name__ == '__main__':
     print(script_path)
 
     # Options
-    base_out_dir = './checkpoints/'
-    data_dir = './training_data/exp_data/'
+    base_out_dir = "./checkpoints/"
+    data_dir = "./training_data/exp_data/"
 
     feat_dim = 80
     z_dim = 20
 
     num_va = 200
 
-    feat_type = 'mel'
+    feat_type = "mel"
 
-    loss_funcs = OrderedDict([
-        ('G', None),
-        ('D', None),
-        ('RealD', None),
-        ('FakeD', None),
-        ('Convergence', None),
-    ])
+    loss_funcs = OrderedDict(
+        [
+            ("G", None),
+            ("D", None),
+            ("RealD", None),
+            ("FakeD", None),
+            ("Convergence", None),
+        ]
+    )
 
     # BEGAN parameters
     gamma = 1.0
@@ -408,7 +434,7 @@ if __name__ == '__main__':
     # ### Set the validation losses that are used in evaluation ###
     # #############################################################
     eval_metrics = [
-        ('Convergence', 'lower_better'),
+        ("Convergence", "lower_better"),
     ]
     # #############################################################
 
@@ -423,20 +449,21 @@ if __name__ == '__main__':
     batch_size = 5
 
     # Dirs and fps
-    save_dir = os.path.join(base_out_dir, 'save')
+    save_dir = os.path.join(base_out_dir, "save")
     output_dir = os.path.join(save_dir, model_id)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     iterator_tr, num_tr, iterator_va, _ = get_voc_datasets(
-        data_dir, feat_type, batch_size, num_va)
-    print('tr: {}, va: {}'.format(num_tr, num_va))
+        data_dir, feat_type, batch_size, num_va
+    )
+    print("tr: {}, va: {}".format(num_tr, num_va))
 
     inf_iterator_tr = make_inf_iterator(iterator_tr)
 
     # Prepare mean and std
-    mean_fp = os.path.join(data_dir, f'mean.{feat_type}.npy')
-    std_fp = os.path.join(data_dir, f'std.{feat_type}.npy')
+    mean_fp = os.path.join(data_dir, f"mean.{feat_type}.npy")
+    std_fp = os.path.join(data_dir, f"std.{feat_type}.npy")
 
     mean = torch.from_numpy(np.load(mean_fp)).float().cuda().view(1, feat_dim, 1)
     std = torch.from_numpy(np.load(std_fp)).float().cuda().view(1, feat_dim, 1)
@@ -456,8 +483,15 @@ if __name__ == '__main__':
     manager = TrainingManager(
         [netG, netD, recorder],  # networks
         [optimizerG, optimizerD, None],  # optimizers, could be None
-        ['Generator', 'Discriminator', 'BEGANRecorder'],  # names of the corresponding networks
-        output_dir, save_rate, script_path=script_path)
+        [
+            "Generator",
+            "Discriminator",
+            "BEGANRecorder",
+        ],  # names of the corresponding networks
+        output_dir,
+        save_rate,
+        script_path=script_path,
+    )
     # ###################################
 
     # ### k ###
@@ -466,18 +500,18 @@ if __name__ == '__main__':
     # ### Resume training ###
     if resume_training:
         init_epoch = manager.resume_training(model_id, save_dir)
-        print(f'Resumed k: {k}')
+        print(f"Resumed k: {k}")
     else:
         init_epoch = 1
         manager.save_initial()
 
     # ### Train ###
-    for epoch in range(init_epoch, 1+num_epochs):
+    for epoch in range(init_epoch, 1 + num_epochs):
         print(model_id)
         t0 = time.time()
 
         # ### Training ###
-        print('Training...')
+        print("Training...")
         sum_losses_tr = OrderedDict([(loss_name, 0) for loss_name in loss_funcs])
 
         count_all_tr = 0
@@ -505,7 +539,7 @@ if __name__ == '__main__':
 
             fake_voc = netG(z)
 
-            gloss = torch.mean(torch.abs(netD(fake_voc)-fake_voc))
+            gloss = torch.mean(torch.abs(netD(fake_voc) - fake_voc))
 
             # Back propagation
             netG.zero_grad()
@@ -516,8 +550,10 @@ if __name__ == '__main__':
             optimizerG.step()
 
             # ### Train discriminators ###
-            real_dloss = torch.mean(torch.abs(netD(voc)-voc))
-            fake_dloss = torch.mean(torch.abs(netD(fake_voc.detach())-fake_voc.detach()))
+            real_dloss = torch.mean(torch.abs(netD(voc) - voc))
+            fake_dloss = torch.mean(
+                torch.abs(netD(fake_voc.detach()) - fake_voc.detach())
+            )
 
             dloss = real_dloss - k * fake_dloss
 
@@ -533,18 +569,22 @@ if __name__ == '__main__':
             k, convergence = recorder(real_dloss, fake_dloss, update_k=True)
 
             # ### Losses ###
-            losses = OrderedDict([
-                ('G', gloss),
-                ('D', dloss),
-                ('RealD', real_dloss),
-                ('FakeD', fake_dloss),
-                ('Convergence', convergence),
-            ])
+            losses = OrderedDict(
+                [
+                    ("G", gloss),
+                    ("D", dloss),
+                    ("RealD", real_dloss),
+                    ("FakeD", fake_dloss),
+                    ("Convergence", convergence),
+                ]
+            )
 
             # ### Misc ###
 
             # Accumulate losses
-            losses_tr = OrderedDict([(loss_name, lo.item()) for loss_name, lo in losses.items()])
+            losses_tr = OrderedDict(
+                [(loss_name, lo.item()) for loss_name, lo in losses.items()]
+            )
 
             for loss_name, lo in losses_tr.items():
                 sum_losses_tr[loss_name] += lo
@@ -553,17 +593,28 @@ if __name__ == '__main__':
 
             # ### Print info ###
             if i_batch % 10 == 0:
-                batch_info = 'Epoch {}. Batch: {}/{}, T: {:.3f}, '.format(epoch, i_batch, num_batches_tr, time.time()-tt0) + \
-                    ''.join(['(tr) {}: {:.5f}, '.format(loss_name, lo) for loss_name, lo in losses_tr.items()])
+                batch_info = "Epoch {}. Batch: {}/{}, T: {:.3f}, ".format(
+                    epoch, i_batch, num_batches_tr, time.time() - tt0
+                ) + "".join(
+                    [
+                        "(tr) {}: {:.5f}, ".format(loss_name, lo)
+                        for loss_name, lo in losses_tr.items()
+                    ]
+                )
                 print(batch_info, k)
             tt0 = time.time()
 
         # Compute average loss
-        mean_losses_tr = OrderedDict([(loss_name, slo / count_all_tr) for loss_name, slo in sum_losses_tr.items()])
+        mean_losses_tr = OrderedDict(
+            [
+                (loss_name, slo / count_all_tr)
+                for loss_name, slo in sum_losses_tr.items()
+            ]
+        )
 
         # ### Validation ###
-        print('')
-        print('Validation...')
+        print("")
+        print("Validation...")
         mean_losses_va = validate()
 
         # ###########################################################################
@@ -579,9 +630,9 @@ if __name__ == '__main__':
 
         # Save the record
         record = {
-            'mean_losses_tr': mean_losses_tr,
-            'mean_losses_va': mean_losses_va,
-            'best_va_metrics': best_va_metrics,
+            "mean_losses_tr": mean_losses_tr,
+            "mean_losses_va": mean_losses_va,
+            "best_va_metrics": best_va_metrics,
         }
 
         manager.save_middle(epoch, record, va_metrics)
@@ -590,6 +641,10 @@ if __name__ == '__main__':
         # ###########################################################################
 
         t1 = time.time()
-        print('Epoch: {} finished. Time: {:.3f}. Model ID: {}'.format(epoch, t1-t0, model_id))
+        print(
+            "Epoch: {} finished. Time: {:.3f}. Model ID: {}".format(
+                epoch, t1 - t0, model_id
+            )
+        )
 
     print(model_id)

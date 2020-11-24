@@ -879,4 +879,9 @@ if __name__ == "__main__":
         # ###########################################################################
 
         t1 = time.time()
-        print("Epoch: {} finished. Time: {:.3f}".format(epoch, t1 - t0,))
+        print(
+            "Epoch: {} finished. Time: {:.3f}".format(
+                epoch,
+                t1 - t0,
+            )
+        )

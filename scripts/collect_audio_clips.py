@@ -43,7 +43,10 @@ def process_one(args):
 )
 @click.option("--extension", "-e", default="*")
 @click.option(
-    "--out-dir", "-o", type=click.Path(), default="./training_data/clips",
+    "--out-dir",
+    "-o",
+    type=click.Path(),
+    default="./training_data/clips",
 )
 def collect_audio_clips(audio_dir, out_dir, extension):
     audio_dir = Path(audio_dir)
