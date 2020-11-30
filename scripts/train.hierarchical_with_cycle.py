@@ -653,7 +653,6 @@ if __name__ == "__main__":
     for files_to_save in ["record/*"]:
         print(f"Registering paths matching {files_to_save} to save in wandb.")
         wandb.save(files_to_save)
-    print('The warning of type: "wandb: WARNING Symlinked 0 file ..." is expected.')
 
     # Dirs and fps
     iterator_tr, num_tr, iterator_va, num_va = get_voc_datasets(
@@ -666,6 +665,8 @@ if __name__ == "__main__":
     # Prepare mean and std
     mean_fp = os.path.join(data_dir, f"mean.{feat_type}.npy")
     std_fp = os.path.join(data_dir, f"std.{feat_type}.npy")
+    wandb.save(mean_fp)
+    wandb.save(std_fp)
 
     mean = torch.from_numpy(np.load(mean_fp)).float().cuda().view(1, feat_dim, 1)
     std = torch.from_numpy(np.load(std_fp)).float().cuda().view(1, feat_dim, 1)
