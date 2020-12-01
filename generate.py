@@ -1,8 +1,7 @@
-import os
 import argparse
+from pathlib import Path
 
 import yaml
-import librosa
 import sys
 import numpy as np
 import soundfile as sf
@@ -226,8 +225,10 @@ def main(
 
     # ### Model info ###
     if output_folder is None:
-        output_folder = f"generated_samples/{model_type}"
-    os.makedirs(output_folder, exist_ok=True)
+        output_folder = Path("generated_samples") / model_type
+    output_folder = Path(output_folder)
+
+    output_folder.mkdir(parents=True, exist_ok=True)
 
     z_dim = 20
     z_scale_factors = [2, 2, 2, 2]
@@ -247,8 +248,8 @@ def main(
         std = std.cuda(gid)
 
     # ### Vocoder info ###
-    vocoder_dir = f"models/{data_type}/vocoder/"
-    vocoder_config_fp = os.path.join(vocoder_dir, "args.yml")
+    vocoder_dir = Path("models") / data_type / "vocoder"
+    vocoder_config_fp = vocoder_dir / "args.yml"
     vocoder_config = read_yaml(vocoder_config_fp)
 
     # ### Import ###
@@ -280,8 +281,8 @@ def main(
         generator = generator.cuda(gid)
 
     # ### Vocoder ###
-    vocoder_model_dir = f"models/{data_type}/vocoder/"
-    sys.path.append(vocoder_model_dir)
+    vocoder_model_dir = Path("models") / data_type / "vocoder"
+    sys.path.append(str(vocoder_model_dir))
     import modules
 
     if data_type == "speech":
@@ -292,7 +293,7 @@ def main(
     vocoder = MelGAN(n_mel_channels, ngf, n_residual_layers)
     vocoder.eval()
 
-    vocoder_param_fp = os.path.join(vocoder_model_dir, "params.pt")
+    vocoder_param_fp = vocoder_model_dir / "params.pt"
     vocoder.load_state_dict(torch.load(vocoder_param_fp))
 
     if gid >= 0:
@@ -301,9 +302,8 @@ def main(
     # ### Process ###
     torch.manual_seed(seed)
     for ii in range(num_samples):
-        print(f"Generate sample {ii}")
-        out_fp_wav = os.path.join(output_folder, f"{ii}.wav")
-        out_fp_mp3 = os.path.join(output_folder, f"{ii}.mp3")
+        out_fp_wav = Path(output_folder) / f"{ii}.wav"
+        print(f"Generating {out_fp_wav}")
 
         if arch_type == "nonhierarchical":
             z = torch.zeros((1, z_dim, num_frames)).normal_(0, 1).float()
