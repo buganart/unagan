@@ -193,15 +193,15 @@ class NonHierarchicalGenerator(nn.Module):
         return x
 
 
-def main(args):
-    data_type = args.data_type
-    arch_type = args.arch_type
-    output_folder = args.output_folder
-    duration = args.duration
-    num_samples = args.num_samples
-    gid = args.gid
-
-    seed = args.seed
+def main(
+    data_type="custom",
+    arch_type="hc",
+    output_folder=None,
+    duration=10,
+    num_samples=5,
+    gid=1,
+    seed=123,
+):
 
     # ### Data type ###
     # assert data_type in ["singing", "speech", "piano", "violin"]
@@ -346,8 +346,8 @@ def parse_argument():
         "--data_type",
         "-d",
         dest="data_type",
-        default="singing",
-        help='Data type. Options: "singing"(Default)|"speech"|"piano"|"violin"',
+        default="custom",
+        help='Data type. Options: "custom"(Default)|"speech"|"piano"|"violin"',
     )
 
     parser.add_argument(
@@ -407,4 +407,4 @@ if __name__ == "__main__":
 
     args = parse_argument()
 
-    main(args)
+    main(**vars(args))
