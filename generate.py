@@ -7,8 +7,6 @@ import sys
 import numpy as np
 import soundfile as sf
 
-from pydub import AudioSegment
-
 import src.training_manager as manager
 import torch
 import torch.nn as nn
@@ -331,10 +329,6 @@ def main(
 
         # Save to wav
         sf.write(out_fp_wav, audio, sr)
-
-        # Convert to mp3
-        AudioSegment.from_wav(out_fp_wav).export(out_fp_mp3, format="mp3")
-        os.remove(out_fp_wav)
 
 
 def parse_argument():
