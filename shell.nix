@@ -30,21 +30,18 @@ mkShell {
       # unagan dependencies
       librosa
       # ffmpeg-full leads to assertion error with blas override.
-      (pydub.override { ffmpeg-full = ffmpeg; })
       click
       pyyaml
       pytorchWithCuda
       scipy
+      jupyter
+      jupyterlab
 
       pip
 
       # dev deps
       pudb  # debugger
-      black
       ipython
-      pyls-isort
-      pyls-black
-      pyls-mypy
       python-language-server
     ]))
    ];

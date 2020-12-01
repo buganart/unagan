@@ -1,36 +1,57 @@
+import warnings
 from pathlib import Path
 
 import numpy as np
 import librosa
-from pydub import AudioSegment
 import click
 
-from multiprocessing import Pool
+from joblib import Parallel, delayed
+import soundfile as sf
 
 
-def process_one(args):
+def make_clip(path, out_dir, sampling_rate, start, end, subclip_duration):
+    out_path = out_dir / f"{path.name}.{start}_{end}.wav"
+    if out_path.exists():
+        return
 
-    path, out_dir = args
+    subclip, _ = librosa.load(
+        path, sr=sampling_rate, offset=start, duration=subclip_duration
+    )
+    sf.write(out_path, subclip, sampling_rate)
+
+
+def process_one(path, out_dir):
+
     print(f"Processing {path}")
 
     duration = librosa.get_duration(filename=path)
+    _, existing_sampling_rate = librosa.load(path, duration=0, sr=None)
+
+    if existing_sampling_rate != 44100:
+        print(
+            f"Sampling rate is {existing_sampling_rate}: "
+            "To avoid slow resampling use 44.1 kHz audio."
+        )
+
     subclip_duration = 10
     num_subclips = int(np.ceil(duration / subclip_duration))
 
-    song = AudioSegment.from_wav(path)
-
+    args = []
     for ii in range(num_subclips):
-        start = ii * subclip_duration
-        end = (ii + 1) * subclip_duration
-        print(path, start, end)
+        args.append(
+            dict(
+                path=path,
+                out_dir=out_dir,
+                sampling_rate=44100,
+                start=ii * subclip_duration,
+                end=(ii + 1) * subclip_duration,
+                subclip_duration=subclip_duration,
+            )
+        )
 
-        out_path = out_dir / f"{path.name}.{start}_{end}.mp3"
-        if out_path.exists():
-            print(f"Path {out_path} exists. Done before.")
-            continue
-
-        subclip = song[start * 1000 : end * 1000]
-        subclip.export(out_path, format="mp3")
+    Parallel(verbose=0, n_jobs=-1, backend="multiprocessing")(
+        delayed(make_clip)(**kwargs) for kwargs in args
+    )
 
 
 @click.command()
@@ -55,10 +76,11 @@ def collect_audio_clips(audio_dir, out_dir, extension):
     out_dir.mkdir(parents=True, exist_ok=True)
 
     paths = sorted(audio_dir.glob(f"*.{extension}"))
-    args_list = [(path, out_dir) for path in paths]
 
-    pool = Pool()
-    pool.map(process_one, args_list)
+    for path in paths:
+        process_one(path, out_dir)
+
+    print("Done.")
 
 
 if __name__ == "__main__":

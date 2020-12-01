@@ -1,6 +1,5 @@
 librosa
 numpy
-pydub
 pyyaml
 soundfile
 torch

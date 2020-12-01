@@ -113,31 +113,26 @@ def process_clip(extract_func, sampling_rate, base_out_dir, clip_path):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sampling_rate", type=int, default=44100)
-    parser.add_argument("--n_fft", type=int, default=1024)
-    parser.add_argument("--n_mel_channels", type=int, default=80)
-    args = parser.parse_args()
 
     base_out_dir = Path("./training_data/exp_data/")
     clip_dir = Path("./training_data/clips/")  # out_dir from step1
 
     feat_type = "mel"
-    extension = ".mp3"
+    extension = ".wav"
     peak_norm = True
 
-    n_fft = args.n_fft
+    n_fft = 1024
     hop_length = 256
     win_length = 1024
-    n_mel_channels = args.n_mel_channels
-    sampling_rate = args.sampling_rate
+    n_mel_channels = 80
+    sampling_rate = 44100
 
     # ### Process ###
     extract_func = Audio2Mel(
         n_fft, hop_length, win_length, sampling_rate, n_mel_channels
     )
 
-    clip_paths = sorted(clip_dir.glob("*.mp3"))
+    clip_paths = sorted(clip_dir.glob(f"*{extension}"))
     Parallel(n_jobs=-1, verbose=2, pre_dispatch="all")(
         delayed(process_clip)(extract_func, sampling_rate, base_out_dir, clip_path)
         for clip_path in clip_paths

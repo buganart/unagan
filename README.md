@@ -74,6 +74,7 @@ We use a separation model we developed. You can use open-sourced ones such as [O
     python scripts/collect_audio_clips.py --audio-dir "audio/RAW Sessions" --extension WAV
     python scripts/extract_mel.py
     python scripts/make_dataset.py
+    python scripts/compute_mean_std.mel.py
     python scripts/train.hierarchical_with_cycle.py
 
 
