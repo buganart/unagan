@@ -27,7 +27,7 @@ class Audio2Mel(nn.Module):
         n_fft=1024,
         hop_length=256,
         win_length=1024,
-        sampling_rate=22050,
+        sampling_rate=44100,
         n_mel_channels=80,
         mel_fmin=0.0,
         mel_fmax=None,
@@ -114,7 +114,7 @@ def process_clip(extract_func, sampling_rate, base_out_dir, clip_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sampling_rate", type=int, default=22050)
+    parser.add_argument("--sampling_rate", type=int, default=44100)
     parser.add_argument("--n_fft", type=int, default=1024)
     parser.add_argument("--n_mel_channels", type=int, default=80)
     args = parser.parse_args()
