@@ -1,6 +1,7 @@
-torch
+librosa
 numpy
 pydub
 pyyaml
-librosa
+soundfile
+torch
 wandb>=0.10.2
