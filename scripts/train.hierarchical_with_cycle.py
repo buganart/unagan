@@ -27,6 +27,8 @@ from torch.nn.utils import spectral_norm
 
 import wandb
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 torch.multiprocessing.set_sharing_strategy("file_system")
 
 loss_funcs = OrderedDict(
@@ -106,7 +108,8 @@ def get_voc_datasets(path, feat_type, batch_size):
 def validate(epoch, step):
     # Store random state
     cpu_rng_state_tr = torch.get_rng_state()
-    gpu_rng_state_tr = torch.cuda.get_rng_state()
+    if device.type == "cuda":
+        gpu_rng_state_tr = torch.cuda.get_rng_state()
 
     # Set random stae
     torch.manual_seed(123)
@@ -126,7 +129,7 @@ def validate(epoch, step):
 
             # voc.shape=(bs, feat_dim, num_frames)
             voc = batch
-            voc = voc.cuda()
+            voc = voc.to(device)
             voc = (voc - mean) / std
 
             bs, _, nf = voc.size()
@@ -136,7 +139,7 @@ def validate(epoch, step):
                 torch.zeros((bs, z_dim, int(np.ceil(nf / z_total_scale_factor))))
                 .normal_(0, 1)
                 .float()
-                .cuda()
+                .to(device)
             )
 
             fake_voc = netG(z)
@@ -194,7 +197,8 @@ def validate(epoch, step):
 
     # Restore rng state
     torch.set_rng_state(cpu_rng_state_tr)
-    torch.cuda.set_rng_state(gpu_rng_state_tr)
+    if device.type == "cuda":
+        torch.cuda.set_rng_state(gpu_rng_state_tr)
 
     return mean_losses_va
 
@@ -668,13 +672,13 @@ if __name__ == "__main__":
     wandb.save(mean_fp)
     wandb.save(std_fp)
 
-    mean = torch.from_numpy(np.load(mean_fp)).float().cuda().view(1, feat_dim, 1)
-    std = torch.from_numpy(np.load(std_fp)).float().cuda().view(1, feat_dim, 1)
+    mean = torch.from_numpy(np.load(mean_fp)).float().to(device).view(1, feat_dim, 1)
+    std = torch.from_numpy(np.load(std_fp)).float().to(device).view(1, feat_dim, 1)
 
     # Model
-    netG = NetG(feat_dim, z_dim, z_scale_factors).cuda()
-    netD = NetD(feat_dim).cuda()
-    netE = Encoder(feat_dim, z_dim, z_scale_factors).cuda()
+    netG = NetG(feat_dim, z_dim, z_scale_factors).to(device)
+    netD = NetD(feat_dim).to(device)
+    netE = Encoder(feat_dim, z_dim, z_scale_factors).to(device)
     recorder = BEGANRecorder(lambda_k, init_k, gamma)
 
     # Optimizers
@@ -750,7 +754,7 @@ if __name__ == "__main__":
             # voc.shape=(bs, feat_dim, num_frames)
             voc = batch
 
-            voc = voc.cuda()
+            voc = voc.to(device)
             voc = (voc - mean) / std
 
             bs, _, nf = voc.size()
@@ -760,7 +764,7 @@ if __name__ == "__main__":
                 torch.zeros((bs, z_dim, int(np.ceil(nf / z_total_scale_factor))))
                 .normal_(0, 1)
                 .float()
-                .cuda()
+                .to(device)
             )
 
             fake_voc = netG(z)
