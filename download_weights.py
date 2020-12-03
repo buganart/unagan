@@ -1,33 +1,62 @@
 #!/usr/bin/env ipython
+import collections
+import pprint
 import shutil
 import tempfile
 from argparse import ArgumentParser
 from pathlib import Path
+from typing import List
+
 
 import wandb
 
 MODEL_PATHS = {
     "unagan": [
         (
-            "model/params.Generator.latest.torch",
+            "params.Generator.latest.torch",
             "params.generator.hierarchical_with_cycle.pt",
         ),
-        ("training_data/exp_data/mean.mel.npy", "mean.mel.npy"),
-        ("training_data/exp_data/std.mel.npy", "std.mel.npy"),
+        ("mean.mel.npy", "mean.mel.npy"),
+        ("std.mel.npy", "std.mel.npy"),
     ],
     "melgan": [
         ("args.yml", "vocoder/args.yml"),
         ("best_netG.pt", "vocoder/params.pt"),
-        ("mel2wav/modules.py", "vocoder/modules.py"),
+        ("modules.py", "vocoder/modules.py"),
     ],
 }
 
 
+def find_duplicate_filenames(paths: List[Path]):
+
+    grouped_by_name = collections.defaultdict(list)
+
+    for path in paths:
+        grouped_by_name[path.name].append(path)
+
+    return {name: files for name, files in grouped_by_name.items() if len(files) > 1}
+
+
 def download_files_from_run(run, model_dir, paths):
 
-    for wandb_path, path_in_model_dir in paths:
+    files = list(run.files())
 
-        wandb_file = run.file(wandb_path)
+    duplicates = find_duplicate_filenames([Path(f.name) for f in files])
+
+    if duplicates:
+        pprint.pprint(duplicates)
+        raise ValueError("This run has duplicate file names.")
+
+    filename_to_file = {Path(f.name).name: f for f in files}
+
+    for filename, path_in_model_dir in paths:
+
+        try:
+            wandb_file = filename_to_file[filename]
+        except KeyError:
+            raise ValueError(f"File {filename} not found in {run}.")
+
+        wandb_path = wandb_file.name
 
         with tempfile.TemporaryDirectory() as temp_dir:
 
