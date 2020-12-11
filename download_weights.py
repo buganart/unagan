@@ -1,6 +1,5 @@
 #!/usr/bin/env ipython
 import collections
-import pprint
 import shutil
 import tempfile
 from argparse import ArgumentParser
@@ -27,35 +26,36 @@ MODEL_PATHS = {
 }
 
 
-def find_duplicate_filenames(paths: List[Path]):
+def group_filenames(files: List):
 
     grouped_by_name = collections.defaultdict(list)
 
-    for path in paths:
-        grouped_by_name[path.name].append(path)
+    for file in files:
+        grouped_by_name[Path(file.name).name].append(file)
 
-    return {name: files for name, files in grouped_by_name.items() if len(files) > 1}
+    return grouped_by_name
 
 
 def download_files_from_run(run, model_dir, paths):
 
     files = list(run.files())
 
-    duplicates = find_duplicate_filenames([Path(f.name) for f in files])
-
-    if duplicates:
-        pprint.pprint(duplicates)
-        raise ValueError("This run has duplicate file names.")
-
-    filename_to_file = {Path(f.name).name: f for f in files}
+    wandb_files_grouped_by_filename = group_filenames(files)
 
     for filename, path_in_model_dir in paths:
 
         try:
-            wandb_file = filename_to_file[filename]
+            wandb_files = wandb_files_grouped_by_filename[filename]
         except KeyError:
             raise ValueError(f"File {filename} not found in {run}.")
 
+        if len(wandb_files) > 1:
+            raise ValueError(
+                f"Run {run} has more than one file with filename"
+                f" {filename}: {wandb_files}"
+            )
+
+        wandb_file = wandb_files[0]
         wandb_path = wandb_file.name
 
         with tempfile.TemporaryDirectory() as temp_dir:
