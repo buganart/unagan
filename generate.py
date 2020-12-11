@@ -11,6 +11,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from datetime import datetime
+
 
 def read_yaml(fp):
     with open(fp) as file:
@@ -198,6 +200,8 @@ def main(
     num_samples=5,
     gid=1,
     seed=123,
+    melgan_run_id=None,
+    unagan_run_id=None,
 ):
 
     # ### Data type ###
@@ -301,8 +305,17 @@ def main(
 
     # ### Process ###
     torch.manual_seed(seed)
+    # information for filename
+    filename_base = datetime.utcnow().strftime("%Y-%m-%d_%H-%M")
+
+    if melgan_run_id is not None:
+        filename_base += "_" + melgan_run_id
+
+    if unagan_run_id is not None:
+        filename_base += "_" + unagan_run_id
+
     for ii in range(num_samples):
-        out_fp_wav = Path(output_folder) / f"{ii}.wav"
+        out_fp_wav = Path(output_folder) / f"{filename_base}_sample{ii}.wav"
         print(f"Generating {out_fp_wav}")
 
         if arch_type == "nonhierarchical":
