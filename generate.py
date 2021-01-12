@@ -234,6 +234,15 @@ def main(
 
     output_folder.mkdir(parents=True, exist_ok=True)
 
+    # also save to all_generated_audio_dir is the folder exists
+    try:
+        all_generated_audio_dir = Path(
+            "/content/drive/MyDrive/AUDIO DATABASE/UNAGAN OUTPUT/AUDIOS/"
+        )
+        all_generated_audio_dir.mkdir(parents=True, exist_ok=True)
+    except:
+        all_generated_audio_dir = None
+
     z_dim = 20
     z_scale_factors = [2, 2, 2, 2]
     z_total_scale_factor = np.prod(z_scale_factors)
@@ -342,6 +351,12 @@ def main(
 
         # Save to wav
         sf.write(out_fp_wav, audio, sr)
+        # Save also to all_generated_audio_dir
+        if all_generated_audio_dir:
+            out2_fp_wav = (
+                Path(all_generated_audio_dir) / f"{filename_base}_sample{ii}.wav"
+            )
+            sf.write(out2_fp_wav, audio, sr)
 
 
 def parse_argument():
