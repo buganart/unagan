@@ -563,6 +563,24 @@ if __name__ == "__main__":
     parser.add_argument(
         "--wandb-dir", type=str, default="wandb", help="Directory with wandb runs"
     )
+
+    # new argument
+    parser.add_argument("--feat_dim", type=int, default=80)
+    parser.add_argument("--z_dim", type=int, default=20)
+    parser.add_argument("--z_scale_factors", default=[2, 2, 2, 2])
+    parser.add_argument("--num_va", type=int, default=200)
+    # BEGAN parameters
+    parser.add_argument("--gamma", type=float, default=1.0)
+    parser.add_argument("--lambda_k", type=float, default=0.01)
+    parser.add_argument("--init_k", type=float, default=0.0)
+
+    parser.add_argument("--init_lr", type=float, default=0.0001)
+    parser.add_argument("--num_epochs", type=int, default=200)
+
+    parser.add_argument("--lambda_cycle", type=int, default=1)
+    parser.add_argument("--max_grad_norm", type=int, default=3)
+    parser.add_argument("--save_rate", type=int, default=20)
+    parser.add_argument("--batch_size", type=int, default=5)
     args = parser.parse_args()
 
     script_path = os.path.realpath(__file__)
@@ -570,20 +588,20 @@ if __name__ == "__main__":
 
     data_dir = "./training_data/exp_data"
 
-    feat_dim = 80
-    z_dim = 20
+    feat_dim = args.feat_dim
+    z_dim = args.z_dim
 
-    z_scale_factors = [2, 2, 2, 2]
+    z_scale_factors = args.z_scale_factors
     z_total_scale_factor = np.prod(z_scale_factors)
 
-    num_va = 200
+    num_va = args.num_va
 
     feat_type = "mel"
 
     # BEGAN parameters
-    gamma = 1.0
-    lambda_k = 0.01
-    init_k = 0.0
+    gamma = args.gamma
+    lambda_k = args.lambda_k
+    init_k = args.init_k
 
     # #############################################################
     # ### Set the validation losses that are used in evaluation ###
@@ -594,17 +612,17 @@ if __name__ == "__main__":
     # #############################################################
 
     # Training options
-    init_lr = 0.0001
-    num_epochs = 200
+    init_lr = args.init_lr
+    num_epochs = args.num_epochs
     batches_per_epoch = args.batches_per_epoch
 
-    lambda_cycle = 1
+    lambda_cycle = args.lambda_cycle
 
-    max_grad_norm = 3
+    max_grad_norm = args.max_grad_norm
 
-    save_rate = 20
+    save_rate = args.save_rate
 
-    batch_size = 5
+    batch_size = args.batch_size
 
     config_keys = [
         "script_path",
