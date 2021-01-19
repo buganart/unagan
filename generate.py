@@ -240,8 +240,15 @@ def main(
             "/content/drive/MyDrive/AUDIO DATABASE/UNAGAN OUTPUT/AUDIOS/"
         )
         all_generated_audio_dir.mkdir(parents=True, exist_ok=True)
+        print("generated audio files will also saved to:", str(all_generated_audio_dir))
     except:
         all_generated_audio_dir = None
+        print(
+            "the path '",
+            str(all_generated_audio_dir),
+            "' not exists. Only save audio files to:",
+            str(output_folder),
+        )
 
     z_dim = 20
     z_scale_factors = [2, 2, 2, 2]
