@@ -237,7 +237,7 @@ def main(
     # also save to all_generated_audio_dir is the folder exists
     try:
         all_generated_audio_dir = Path(
-            "/content/drive/MyDrive/AUDIO DATABASE/UNAGAN OUTPUT/AUDIOS/"
+            "/content/drive/My Drive/PUBLICATIONS/The Replicant/AUDIO DATABASE/UNAGAN OUTPUT/AUDIOS/"
         )
         all_generated_audio_dir.mkdir(parents=True, exist_ok=True)
         print("generated audio files will also saved to:", str(all_generated_audio_dir))
