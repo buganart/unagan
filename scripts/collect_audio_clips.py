@@ -75,7 +75,7 @@ def collect_audio_clips(audio_dir, out_dir, extension):
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    paths = sorted(audio_dir.glob(f"*.{extension}"))
+    paths = sorted(audio_dir.rglob(f"*.{extension}"))
 
     for path in paths:
         process_one(path, out_dir)
