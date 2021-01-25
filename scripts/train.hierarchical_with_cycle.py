@@ -24,6 +24,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils import clip_grad_norm_
 from torch.nn.utils import spectral_norm
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 import wandb
 
@@ -581,6 +582,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_grad_norm", type=int, default=3)
     parser.add_argument("--save_rate", type=int, default=20)
     parser.add_argument("--batch_size", type=int, default=5)
+
+    parser.add_argument("--ddp", type=bool, default=False)
     args = parser.parse_args()
 
     script_path = os.path.realpath(__file__)
@@ -694,10 +697,16 @@ if __name__ == "__main__":
     std = torch.from_numpy(np.load(std_fp)).float().to(device).view(1, feat_dim, 1)
 
     # Model
-    netG = NetG(feat_dim, z_dim, z_scale_factors).to(device)
-    netD = NetD(feat_dim).to(device)
-    netE = Encoder(feat_dim, z_dim, z_scale_factors).to(device)
-    recorder = BEGANRecorder(lambda_k, init_k, gamma)
+    if args.data_parallel:
+        netG = DDP(NetG(feat_dim, z_dim, z_scale_factors).to(device))
+        netD = DDP(NetD(feat_dim).to(device))
+        netE = DDP(Encoder(feat_dim, z_dim, z_scale_factors).to(device))
+        recorder = DDP(BEGANRecorder(lambda_k, init_k, gamma))
+    else:
+        netG = NetG(feat_dim, z_dim, z_scale_factors).to(device)
+        netD = NetD(feat_dim).to(device)
+        netE = Encoder(feat_dim, z_dim, z_scale_factors).to(device)
+        recorder = BEGANRecorder(lambda_k, init_k, gamma)
 
     # Optimizers
     optimizerG = optim.Adam(netG.parameters(), lr=init_lr)
