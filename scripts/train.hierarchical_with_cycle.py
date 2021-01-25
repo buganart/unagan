@@ -701,7 +701,7 @@ if __name__ == "__main__":
         netG = DP(NetG(feat_dim, z_dim, z_scale_factors).to(device))
         netD = DP(NetD(feat_dim).to(device))
         netE = DP(Encoder(feat_dim, z_dim, z_scale_factors).to(device))
-        recorder = DP(BEGANRecorder(lambda_k, init_k, gamma))
+        recorder = BEGANRecorder(lambda_k, init_k, gamma)
     else:
         netG = NetG(feat_dim, z_dim, z_scale_factors).to(device)
         netD = NetD(feat_dim).to(device)
