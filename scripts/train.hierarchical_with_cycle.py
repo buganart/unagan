@@ -694,9 +694,9 @@ if __name__ == "__main__":
     std = torch.from_numpy(np.load(std_fp)).float().to(device).view(1, feat_dim, 1)
 
     # Model
-    netG = NetG(feat_dim, z_dim, z_scale_factors).to(device)
-    netD = NetD(feat_dim).to(device)
-    netE = Encoder(feat_dim, z_dim, z_scale_factors).to(device)
+    netG = nn.DataParallel(NetG(feat_dim, z_dim, z_scale_factors)).to(device)
+    netD = nn.DataParallel(NetD(feat_dim)).to(device)
+    netE = nn.DataParallel(Encoder(feat_dim, z_dim, z_scale_factors)).to(device)
     recorder = BEGANRecorder(lambda_k, init_k, gamma)
 
     # Optimizers

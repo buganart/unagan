@@ -5,6 +5,7 @@ import os
 import json
 import sys
 import shutil
+from collections import OrderedDict
 from copy import deepcopy
 
 import numpy as np
@@ -168,6 +169,16 @@ def load_params(file_path, device_id):
     return params
 
 
+def load_state_dict_fix_data_parallel(model, state_dict):
+    # See https://discuss.pytorch.org/t/solved-keyerror-unexpected-key-module-encoder-embedding-weight-in-state-dict/1686/29 for more options.
+    try:
+        model.load_state_dict(state_dict)
+    except RuntimeError:
+        print("Fixing model trained with DataParallel by removing .module prefix")
+        state_dict = OrderedDict((k.split(".", 1)[1], v) for k, v in state_dict.items())
+        model.load_state_dict(state_dict)
+
+
 def load_model(file_path, network, optimizer=None, device_id="cpu"):
     obj = load_params(file_path, device_id)
     model_state_dict = obj["state_dict.model"]
@@ -176,7 +187,7 @@ def load_model(file_path, network, optimizer=None, device_id="cpu"):
     if optimizer is not None and optimizer_state_dict is not None:
         optimizer.load_state_dict(optimizer_state_dict)
 
-    network.load_state_dict(model_state_dict)
+    load_state_dict_fix_data_parallel(network, model_state_dict)
 
 
 def get_structure_description(network):
