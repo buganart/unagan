@@ -697,7 +697,7 @@ if __name__ == "__main__":
     std = torch.from_numpy(np.load(std_fp)).float().to(device).view(1, feat_dim, 1)
 
     # Model
-    if args.data_parallel:
+    if args.ddp:
         netG = DDP(NetG(feat_dim, z_dim, z_scale_factors).to(device))
         netD = DDP(NetD(feat_dim).to(device))
         netE = DDP(Encoder(feat_dim, z_dim, z_scale_factors).to(device))
