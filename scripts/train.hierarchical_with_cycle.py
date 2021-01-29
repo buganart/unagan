@@ -559,6 +559,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-id", type=str)
+    parser.add_argument("--audio_db_dir", type=str)
     parser.add_argument("--batches-per-epoch", type=int, default=500)
     parser.add_argument("--notes", type=str)
     parser.add_argument(
