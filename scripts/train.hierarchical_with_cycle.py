@@ -576,7 +576,7 @@ if __name__ == "__main__":
     parser.add_argument("--init_k", type=float, default=0.0)
 
     parser.add_argument("--init_lr", type=float, default=0.0001)
-    parser.add_argument("--num_epochs", type=int, default=200)
+    parser.add_argument("--num_epochs", type=int, default=1000)
 
     parser.add_argument("--lambda_cycle", type=int, default=1)
     parser.add_argument("--max_grad_norm", type=int, default=3)
