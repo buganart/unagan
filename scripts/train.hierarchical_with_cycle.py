@@ -583,8 +583,6 @@ if __name__ == "__main__":
     parser.add_argument("--max_grad_norm", type=int, default=3)
     parser.add_argument("--save_rate", type=int, default=20)
     parser.add_argument("--batch_size", type=int, default=5)
-
-    parser.add_argument("--dp", type=bool, default=False)
     args = parser.parse_args()
 
     script_path = os.path.realpath(__file__)
@@ -698,16 +696,19 @@ if __name__ == "__main__":
     std = torch.from_numpy(np.load(std_fp)).float().to(device).view(1, feat_dim, 1)
 
     # Model
-    if args.dp:
+
+    if torch.cuda.device_count() > 1:
         netG = DP(NetG(feat_dim, z_dim, z_scale_factors).to(device))
         netD = DP(NetD(feat_dim).to(device))
         netE = DP(Encoder(feat_dim, z_dim, z_scale_factors).to(device))
         recorder = BEGANRecorder(lambda_k, init_k, gamma)
+        print(f"We have {torch.cuda.device_count()} gpus. Use data parallel.")
     else:
         netG = NetG(feat_dim, z_dim, z_scale_factors).to(device)
         netD = NetD(feat_dim).to(device)
         netE = Encoder(feat_dim, z_dim, z_scale_factors).to(device)
         recorder = BEGANRecorder(lambda_k, init_k, gamma)
+        print(f"We have {torch.cuda.device_count()} gpu.")
 
     # Optimizers
     optimizerG = optim.Adam(netG.parameters(), lr=init_lr)
