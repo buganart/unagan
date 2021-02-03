@@ -403,7 +403,7 @@ class TrainingManager(object):
             resume training the model with model id <model_id>
         """
 
-        param_dir = os.path.join(base_model_dir, "model")
+        param_dir = base_model_dir  # os.path.join(base_model_dir, "model")
 
         # Get record
         record_fp = os.path.join(base_model_dir, "record", "record.latest.json")
