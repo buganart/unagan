@@ -740,10 +740,10 @@ if __name__ == "__main__":
     if resume_training:
         for path in [
             "record/record.latest.json",
-            "model/params.Generator.latest.torch",
-            "model/params.Discriminator.latest.torch",
-            "model/params.Encoder.latest.torch",
-            "model/params.BEGANRecorder.latest.torch",
+            "params.Generator.latest.torch",
+            "params.Discriminator.latest.torch",
+            "params.Encoder.latest.torch",
+            "params.BEGANRecorder.latest.torch",
         ]:
             print(f"Restoring {path}")
             wandb.restore(path)
