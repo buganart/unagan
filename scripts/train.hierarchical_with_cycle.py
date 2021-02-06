@@ -668,7 +668,7 @@ if __name__ == "__main__":
     if melgan_run_id:
         print(f"Downloading wandb melgan run ID {melgan_run_id} for wav generation.")
         download_weights.main(
-            melgan_run_id=melgan_run_id, model_dir=Path("models/custom")
+            melgan_run_id=melgan_run_id, unagan_run_id=None, model_dir=Path("models/custom")
         )
 
     Path(args.wandb_dir).mkdir(parents=True, exist_ok=True)
