@@ -374,7 +374,7 @@ def main(
                 Path(all_generated_audio_dir) / f"{filename_base}_sample{ii}.wav"
             )
             sf.write(out2_fp_wav, audio, sr)
-    return audio_fps
+    return audio_fps, sampling_rate
 
 
 def parse_argument():

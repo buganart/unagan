@@ -938,7 +938,7 @@ if __name__ == "__main__":
         if melgan_run_id:
             output_dir = "./generated/"
             Path(output_dir).mkdir(parents=True, exist_ok=True)
-            filepaths = generate.main(
+            filepaths, sampling_rate = generate.main(
                 num_samples=3,
                 gid=0,
                 output_folder=output_dir,
@@ -950,7 +950,11 @@ if __name__ == "__main__":
             # log to wandb
             samples = []
             for i in range(len(filepaths)):
-                samples.append(wandb.Audio(filepaths[i], caption=f"sample {i}"))
+                samples.append(
+                    wandb.Audio(
+                        filepaths[i], caption=f"sample {i}", sample_rate=sampling_rate
+                    )
+                )
             wandb.log({"audio/generated": samples}, step=0)
 
         # ###########################################################################
