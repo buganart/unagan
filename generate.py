@@ -3,6 +3,7 @@ from pathlib import Path
 
 import yaml
 import sys
+import shutil
 import numpy as np
 import soundfile as sf
 
