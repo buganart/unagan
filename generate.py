@@ -235,21 +235,28 @@ def main(
 
     output_folder.mkdir(parents=True, exist_ok=True)
 
-    # also save to all_generated_audio_dir is the folder exists
-    try:
-        all_generated_audio_dir = Path(
-            "/content/drive/My Drive/PUBLICATIONS/The Replicant/AUDIO DATABASE/UNAGAN OUTPUT/AUDIOS/"
-        )
-        all_generated_audio_dir.mkdir(parents=True, exist_ok=True)
-        print("generated audio files will also saved to:", str(all_generated_audio_dir))
-    except:
+    # also save to all_generated_audio_dir is the folder exists,
+    # but do not save if in unagan training (both run id None)
+    if melgan_run_id is None and unagan_run_id is None:
         all_generated_audio_dir = None
-        print(
-            "the path '",
-            str(all_generated_audio_dir),
-            "' not exists. Only save audio files to:",
-            str(output_folder),
-        )
+    else:
+        try:
+            all_generated_audio_dir = Path(
+                "/content/drive/My Drive/PUBLICATIONS/The Replicant/AUDIO DATABASE/UNAGAN OUTPUT/AUDIOS/"
+            )
+            all_generated_audio_dir.mkdir(parents=True, exist_ok=True)
+            print(
+                "generated audio files will also saved to:",
+                str(all_generated_audio_dir),
+            )
+        except:
+            all_generated_audio_dir = None
+            print(
+                "the path '",
+                str(all_generated_audio_dir),
+                "' not exists. Only save audio files to:",
+                str(output_folder),
+            )
 
     z_dim = 20
     z_scale_factors = [2, 2, 2, 2]
@@ -331,6 +338,7 @@ def main(
     if unagan_run_id is not None:
         filename_base += "_" + unagan_run_id
 
+    audio_fps = []
     for ii in range(num_samples):
         out_fp_wav = Path(output_folder) / f"{filename_base}_sample{ii}.wav"
         print(f"Generating {out_fp_wav}")
@@ -359,12 +367,14 @@ def main(
 
         # Save to wav
         sf.write(out_fp_wav, audio, sr)
+        audio_fps.append(out_fp_wav)
         # Save also to all_generated_audio_dir
         if all_generated_audio_dir:
             out2_fp_wav = (
                 Path(all_generated_audio_dir) / f"{filename_base}_sample{ii}.wav"
             )
             sf.write(out2_fp_wav, audio, sr)
+    return audio_fps
 
 
 def parse_argument():

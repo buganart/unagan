@@ -944,10 +944,14 @@ if __name__ == "__main__":
                 output_folder=output_dir,
                 seed=123,
                 duration=10,
-                melgan_run_id=melgan_run_id,
-                unagan_run_id=wandb.run.id,
+                melgan_run_id=None,
+                unagan_run_id=None,
             )
-            # TODO: log to wandb
+            # log to wandb
+            samples = []
+            for i in range(len(filepaths)):
+                samples.append(wandb.Audio(filepaths[i], caption=f"sample {i}"))
+            wandb.log({"audio/generated": samples}, step=0)
 
         # ###########################################################################
 

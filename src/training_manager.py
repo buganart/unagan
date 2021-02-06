@@ -354,7 +354,8 @@ class TrainingManager(object):
             fp = os.path.join(self.model_dir, "params.Generator.latest.torch")
             shutil.copy(
                 fp,
-                Path(self.wav_generate_dir) / "params.generator.hierarchical_with_cycle.pt",
+                Path(self.wav_generate_dir)
+                / "params.generator.hierarchical_with_cycle.pt",
             )
 
     def check_best_va_metrics(self, va_metrics, epoch):
