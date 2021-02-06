@@ -235,6 +235,7 @@ class TrainingManager(object):
         output_dir=None,
         save_rate=1,
         script_path=None,
+        wav_generate_dir=None,
     ):
         """
         networks: list of `network`
@@ -257,6 +258,7 @@ class TrainingManager(object):
 
         # self.score_higher_better = score_higher_better
         self.script_path = script_path
+        self.wav_generate_dir = wav_generate_dir
 
         self.networks = networks
         self.optimizers = optimizers
@@ -344,6 +346,15 @@ class TrainingManager(object):
             self.networks, self.optimizers, params_fp_list
         ):
             save_params(params_fp, network, optimizer)
+
+        # also save a copy for wav generation
+        if self.wav_generate_dir:
+            Path(self.wav_generate_dir).mkdir(parents=True, exist_ok=True)
+            fp = os.path.join(self.model_dir, "params.Generator.latest.torch")
+            shutil.copy(
+                fp,
+                self.wav_generate_dir / "params.generator.hierarchical_with_cycle.pt",
+            )
 
     def check_best_va_metrics(self, va_metrics, epoch):
         """

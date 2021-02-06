@@ -14,6 +14,9 @@ import sys
 
 sys.path.append("..")
 from src.training_manager import TrainingManager, get_current_time
+import download_weights
+import generate
+
 
 import numpy as np
 
@@ -566,6 +569,10 @@ if __name__ == "__main__":
         "--wandb-dir", type=str, default="wandb", help="Directory with wandb runs"
     )
 
+    # argument for log data (need to set vocoder to generate wav samples)
+    parser.add_argument("--melgan_run_id", default=None)
+    parser.add_argument("--wav_generate_dir", type=str, default="models/custom")
+
     # new argument
     parser.add_argument("--feat_dim", type=int, default=80)
     parser.add_argument("--z_dim", type=int, default=20)
@@ -589,6 +596,8 @@ if __name__ == "__main__":
     print(script_path)
 
     data_dir = "./training_data/exp_data"
+
+    melgan_run_id = args.melgan_run_id
 
     feat_dim = args.feat_dim
     z_dim = args.z_dim
@@ -656,6 +665,12 @@ if __name__ == "__main__":
         print("Starting new run from scratch.")
         resume_training = False
 
+    if melgan_run_id:
+        print(f"Downloading wandb melgan run ID {melgan_run_id} for wav generation.")
+        download_weights.main(
+            melgan_run_id=melgan_run_id, model_dir=Path("models/custom")
+        )
+
     Path(args.wandb_dir).mkdir(parents=True, exist_ok=True)
 
     wandb.init(
@@ -691,6 +706,12 @@ if __name__ == "__main__":
     std_fp = os.path.join(data_dir, f"std.{feat_type}.npy")
     wandb.save(mean_fp)
     wandb.save(std_fp)
+    # also save a copy for wav generation
+    if melgan_run_id:
+        temp_dir = Path(args.wav_generate_dir)
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy(mean_fp, temp_dir / f"mean.{feat_type}.npy")
+        shutil.copy(std_fp, temp_dir / f"std.{feat_type}.npy")
 
     mean = torch.from_numpy(np.load(mean_fp)).float().to(device).view(1, feat_dim, 1)
     std = torch.from_numpy(np.load(std_fp)).float().to(device).view(1, feat_dim, 1)
@@ -730,6 +751,7 @@ if __name__ == "__main__":
         output_dir,
         save_rate,
         script_path=script_path,
+        wav_generate_dir=args.wav_generate_dir,
     )
     # ###################################
 
@@ -910,6 +932,20 @@ if __name__ == "__main__":
         manager.save_middle(epoch, record, va_metrics)
         manager.print_record(record)
         manager.print_record_in_one_line(best_va_metrics)
+        if melgan_run_id:
+            output_dir = "./generated/"
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
+            filepaths = generate.main(
+                num_samples=3,
+                gid=0,
+                output_folder=output_dir,
+                seed=123,
+                duration=10,
+                melgan_run_id=melgan_run_id,
+                unagan_run_id=wandb.run.id,
+            )
+            # TODO: log to wandb
+
         # ###########################################################################
 
         t1 = time.time()

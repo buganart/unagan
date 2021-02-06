@@ -78,10 +78,16 @@ def main(
     model_dir.mkdir(parents=True, exist_ok=True)
     run_ids = {"melgan": melgan_run_id, "unagan": unagan_run_id}
 
+    run_ids = {}
+    if melgan_run_id:
+        run_ids["melgan"] = melgan_run_id
+    if unagan_run_id:
+        run_ids["unagan"] = unagan_run_id
+
     wandb.login()
     api = wandb.Api()
 
-    for model in ["melgan", "unagan"]:
+    for model in run_ids.keys():
         run_id = run_ids[model]
         run = api.run(f"demiurge/{model}/{run_id}")
         download_files_from_run(run, model_dir, MODEL_PATHS[model])
@@ -89,8 +95,8 @@ def main(
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--melgan-run-id", required=True)
-    parser.add_argument("--unagan-run-id", required=True)
+    parser.add_argument("--melgan-run-id", default=None)
+    parser.add_argument("--unagan-run-id", default=None)
     parser.add_argument("--model-dir", required=True, type=Path)
     args = parser.parse_args()
     main(**vars(args))
