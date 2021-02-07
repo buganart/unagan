@@ -571,7 +571,8 @@ if __name__ == "__main__":
     )
 
     # argument for log data (need to set vocoder to generate wav samples)
-    parser.add_argument("--melgan_run_id", default=None)
+    parser.add_argument("--melgan_run_id", default="")
+    parser.add_argument("--log_num_samples", type=int, default=1)
     parser.add_argument("--wav_generate_dir", type=str, default="models/custom")
 
     # new argument
@@ -599,6 +600,10 @@ if __name__ == "__main__":
     data_dir = "./training_data/exp_data"
 
     melgan_run_id = args.melgan_run_id
+    if melgan_run_id == "":
+        melgan_run_id = None
+
+    log_num_samples = args.log_num_samples
 
     feat_dim = args.feat_dim
     z_dim = args.z_dim
@@ -939,7 +944,7 @@ if __name__ == "__main__":
             output_dir = "./generated/"
             Path(output_dir).mkdir(parents=True, exist_ok=True)
             audio_array, sampling_rate = generate.main(
-                num_samples=3,
+                num_samples=log_num_samples,
                 gid=0,
                 output_folder=output_dir,
                 seed=123,
