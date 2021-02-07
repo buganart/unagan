@@ -338,7 +338,7 @@ def main(
     if unagan_run_id is not None:
         filename_base += "_" + unagan_run_id
 
-    audio_fps = []
+    audio_array = []
     for ii in range(num_samples):
         out_fp_wav = Path(output_folder) / f"{filename_base}_sample{ii}.wav"
         print(f"Generating {out_fp_wav}")
@@ -365,16 +365,19 @@ def main(
                 audio = vocoder(melspec_voc)
                 audio = audio.squeeze().cpu().numpy()
 
-        # Save to wav
-        sf.write(out_fp_wav, audio, sr)
-        audio_fps.append(out_fp_wav)
-        # Save also to all_generated_audio_dir
-        if all_generated_audio_dir:
-            out2_fp_wav = (
-                Path(all_generated_audio_dir) / f"{filename_base}_sample{ii}.wav"
-            )
-            sf.write(out2_fp_wav, audio, sr)
-    return audio_fps, sampling_rate
+        # keep generated audio as array to log to wandb
+        if melgan_run_id is None and unagan_run_id is None:
+            audio_array.append(audio)
+        else:
+            # Save to wav
+            sf.write(out_fp_wav, audio, sr)
+            # Save also to all_generated_audio_dir
+            if all_generated_audio_dir:
+                out2_fp_wav = (
+                    Path(all_generated_audio_dir) / f"{filename_base}_sample{ii}.wav"
+                )
+                sf.write(out2_fp_wav, audio, sr)
+    return audio_array, sampling_rate
 
 
 def parse_argument():
