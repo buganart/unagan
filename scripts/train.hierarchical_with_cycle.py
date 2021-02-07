@@ -955,7 +955,7 @@ if __name__ == "__main__":
                         audio_array[i], caption=f"sample {i}", sample_rate=sampling_rate
                     )
                 )
-            wandb.log({"audio/generated": samples}, step=epoch)
+            wandb.log({"audio/generated": samples}, step=step)
 
         # ###########################################################################
 
