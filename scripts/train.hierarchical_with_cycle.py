@@ -89,6 +89,11 @@ def get_voc_datasets(path, feat_type, batch_size):
     num_tr = len(tr_dataset)
     num_va = len(va_dataset)
 
+    if num_va < batch_size:
+        batch_va = num_va
+    else:
+        batch_va = batch_size
+
     iterator_tr = DataLoader(
         tr_dataset,
         batch_size=batch_size,
@@ -100,7 +105,7 @@ def get_voc_datasets(path, feat_type, batch_size):
 
     iterator_va = DataLoader(
         va_dataset,
-        batch_size=batch_size,
+        batch_size=batch_va,
         num_workers=0,
         shuffle=False,
         drop_last=True,
@@ -110,7 +115,7 @@ def get_voc_datasets(path, feat_type, batch_size):
     return iterator_tr, num_tr, iterator_va, num_va
 
 
-def validate(epoch, step):
+def validate(epoch, step, iterator_va, num_va):
     # Store random state
     cpu_rng_state_tr = torch.get_rng_state()
     if device.type == "cuda":
@@ -122,7 +127,7 @@ def validate(epoch, step):
     # ###
     sum_losses_va = OrderedDict([(loss_name, 0) for loss_name in loss_funcs])
 
-    count_all_va = 0
+    count_all_va = num_va
 
     # In validation, set netG.eval()
     netG.eval()
@@ -181,7 +186,7 @@ def validate(epoch, step):
             )
 
             # ### Misc ###
-            count_all_va += bs
+            # count_all_va += bs
 
             # Accumulate losses
             losses_va = OrderedDict(
@@ -917,7 +922,7 @@ if __name__ == "__main__":
         # ### Validation ###
         print("")
         print("Validation...")
-        mean_losses_va = validate(epoch, step)
+        mean_losses_va = validate(epoch, step, iterator_va, num_va)
 
         # ###########################################################################
         # ### Check the best validation losses and save information in the middle ###
