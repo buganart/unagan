@@ -328,7 +328,7 @@ def main(
         vocoder.load_state_dict(vocoder_state_dict)
     except RuntimeError:
         print("Fixing model by removing .module prefix")
-        state_dict = OrderedDict((k.split(".", 1)[1], v) for k, v in state_dict.items())
+        vocoder_state_dict = OrderedDict((k.split(".", 1)[1], v) for k, v in vocoder_state_dict.items())
         vocoder_state_dict.load_state_dict(vocoder_state_dict)
 
     if gid >= 0:
