@@ -322,7 +322,13 @@ def main(
     vocoder.eval()
 
     vocoder_param_fp = vocoder_model_dir / "params.pt"
-    vocoder.load_state_dict(torch.load(vocoder_param_fp))
+    vocoder_state_dict = torch.load(vocoder_param_fp)
+    try:
+        vocoder.load_state_dict(vocoder_state_dict)
+    except RuntimeError:
+        print("Fixing model by removing .module prefix")
+        state_dict = OrderedDict((k.split(".", 1)[1], v) for k, v in state_dict.items())
+        vocoder_state_dict.load_state_dict(vocoder_state_dict)
 
     if gid >= 0:
         vocoder = vocoder.cuda(gid)
