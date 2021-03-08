@@ -2,11 +2,13 @@ import argparse
 from pathlib import Path
 
 import yaml
+import wandb
 import sys
 import shutil
 import numpy as np
 import soundfile as sf
 from collections import OrderedDict
+from argparse import Namespace
 
 import src.training_manager as manager
 import torch
@@ -259,11 +261,15 @@ def main(
                 str(output_folder),
             )
 
-    z_dim = 20
-    z_scale_factors = [2, 2, 2, 2]
+    api = wandb.Api()
+    previous_run = api.run(f"demiurge/unagan/{unagan_run_id}")
+    unagan_config = Namespace(**previous_run.config)
+
+    z_dim = unagan_config.z_dim
+    z_scale_factors = unagan_config.z_scale_factors
     z_total_scale_factor = np.prod(z_scale_factors)
 
-    feat_dim = 80
+    feat_dim = unagan_config.feat_dim
 
     param_fp = f"models/{data_type}/params.generator.{arch_type}.pt"
 
@@ -328,7 +334,9 @@ def main(
         vocoder.load_state_dict(vocoder_state_dict)
     except RuntimeError:
         print("Fixing model by removing .module prefix")
-        vocoder_state_dict = OrderedDict((k.split(".", 1)[1], v) for k, v in vocoder_state_dict.items())
+        vocoder_state_dict = OrderedDict(
+            (k.split(".", 1)[1], v) for k, v in vocoder_state_dict.items()
+        )
         vocoder.load_state_dict(vocoder_state_dict)
 
     if gid >= 0:
