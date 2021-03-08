@@ -8,6 +8,7 @@ import shutil
 import numpy as np
 import soundfile as sf
 from collections import OrderedDict
+from argparse import Namespace
 
 import src.training_manager as manager
 import torch
