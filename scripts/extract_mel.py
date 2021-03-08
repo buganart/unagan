@@ -114,6 +114,10 @@ def process_clip(extract_func, sampling_rate, base_out_dir, clip_path):
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--n_mel_channels", type=int, default=80)
+    args = parser.parse_args()
+
     base_out_dir = Path("./training_data/exp_data/")
     clip_dir = Path("./training_data/clips/")  # out_dir from step1
 
@@ -124,7 +128,7 @@ if __name__ == "__main__":
     n_fft = 1024
     hop_length = 256
     win_length = 1024
-    n_mel_channels = 80
+    n_mel_channels = args.n_mel_channels
     sampling_rate = 44100
 
     # ### Process ###
