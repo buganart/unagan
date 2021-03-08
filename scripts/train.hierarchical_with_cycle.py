@@ -452,7 +452,7 @@ class NetD(nn.Module):
         super().__init__()
 
         ks = 3  # kernel size
-        mfd = 512
+        mfd = 512 * int(input_size / 80)
 
         self.mfd = mfd
 
@@ -466,7 +466,7 @@ class NetD(nn.Module):
         ]
 
         blocks1d = [
-            BNSNConv1dDBlock(64 * 10, mfd, 3, 1),
+            BNSNConv1dDBlock(64 * 10 * int(input_size / 80), mfd, 3, 1),
             BNSNConv1dDBlock(mfd, mfd, ks, 16),
             BNSNConv1dDBlock(mfd, mfd, ks, 32),
             BNSNConv1dDBlock(mfd, mfd, ks, 64),
