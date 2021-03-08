@@ -527,8 +527,8 @@ class Encoder(nn.Module):
             BNSNConv2dDBlock(4, 16, ks, 2, 4),
             BNSNConv2dDBlock(16, 64, ks, 2, 8),
         ]
-
-        blocks1d = [BNSNConv1dDBlock(64 * 10, mfd, 3, 1)]
+        # (input_size / 80) to make channel scalable with feat_dim/input_size .
+        blocks1d = [BNSNConv1dDBlock(64 * 10 * (input_size / 80), mfd, 3, 1)]
         for sf in z_scale_factors:
             blocks1d.append(StridedBNSNConv1dDBlock(mfd, mfd, ks, sf))
 
