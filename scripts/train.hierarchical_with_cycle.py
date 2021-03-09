@@ -226,7 +226,7 @@ class BEGANRecorder(nn.Module):
         self.init_k = float(init_k)
         self.gamma = gamma
 
-        self.k = nn.Parameter(torch.tensor(init_k))
+        self.k = nn.Parameter(torch.tensor(self.init_k))
 
     def forward(self, real_dloss, fake_dloss, update_k=False):
         # convergence
