@@ -608,6 +608,12 @@ if __name__ == "__main__":
     if melgan_run_id == "":
         melgan_run_id = None
 
+    model_id = args.model_id
+    if model_id:
+        api = wandb.Api()
+        previous_run = api.run(f"demiurge/unagan/{model_id}")
+        args = argparse.Namespace(**previous_run.config)
+
     log_num_samples = args.log_num_samples
 
     feat_dim = args.feat_dim
@@ -669,8 +675,8 @@ if __name__ == "__main__":
     config = {**{k: locs[k] for k in config_keys}, **args.__dict__}
     pprint.pprint(config)
 
-    if args.model_id:
-        print(f"Resuming wandb run ID {args.model_id}.")
+    if model_id:
+        print(f"Resuming wandb run ID {model_id}.")
         resume_training = True
     else:
         print("Starting new run from scratch.")
@@ -688,7 +694,7 @@ if __name__ == "__main__":
 
     wandb.init(
         dir=args.wandb_dir,
-        id=args.model_id,
+        id=model_id,
         entity="demiurge",
         project="unagan",
         config=config,
