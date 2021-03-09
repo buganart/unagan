@@ -419,6 +419,7 @@ class TrainingManager(object):
         param_dir = base_model_dir  # os.path.join(base_model_dir, "model")
 
         # Get record
+        wandb.restore("record/record.latest.json")
         record_fp = os.path.join(base_model_dir, "record", "record.latest.json")
         records = read_json(record_fp)
         records = {int(key): records[key] for key in records}
@@ -429,8 +430,31 @@ class TrainingManager(object):
 
         # Resume networks and optimizers
         for name, network, optimizer in zip(self.names, self.networks, self.optimizers):
-            file_path = os.path.join(param_dir, "params.{}.latest.torch".format(name))
-            load_model(file_path, network, optimizer)
+            latest_file_success = False
+            latest_file_path = os.path.join(
+                param_dir, "params.{}.latest.torch".format(name)
+            )
+            previous_file_path = os.path.join(
+                param_dir, "params.{}.previous.torch".format(name)
+            )
+
+            try:
+                wandb.restore("params.{}.latest.torch".format(name))
+                load_model(latest_file_path, network, optimizer)
+                latest_file_success = True
+            except:
+                # load prev success file in case latest file corrupted
+                print(
+                    f"loading 'params.{name}.latest.torch' failed. Try previous weight file."
+                )
+                wandb.restore("params.{}.previous.torch".format(name))
+                load_model(previous_file_path, network, optimizer)
+                latest_file_success = False
+
+            if latest_file_success:
+                # store latest successfully restored file as prev file
+                os.rename(latest_file_path, previous_file_path)
+                wandb.save(previous_file_path)
 
         # Set best loss and best score
         self.best_va_metrics = records[resumed_epoch]["record"]["best_va_metrics"]

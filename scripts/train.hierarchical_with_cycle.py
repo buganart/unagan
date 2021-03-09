@@ -773,16 +773,6 @@ if __name__ == "__main__":
 
     # ### Resume training ###
     if resume_training:
-        for path in [
-            "record/record.latest.json",
-            "params.Generator.latest.torch",
-            "params.Discriminator.latest.torch",
-            "params.Encoder.latest.torch",
-            "params.BEGANRecorder.latest.torch",
-        ]:
-            print(f"Restoring {path}")
-            wandb.restore(path)
-
         # Rolling back an unfinished epoch may cause wandb to drop logs.
         # Moving to the next epoch.
         init_epoch = manager.resume_training(output_dir) + 1
