@@ -223,7 +223,7 @@ class BEGANRecorder(nn.Module):
     def __init__(self, lambda_k, init_k, gamma):
         super().__init__()
         self.lambda_k = lambda_k
-        self.init_k = init_k
+        self.init_k = float(init_k)
         self.gamma = gamma
 
         self.k = nn.Parameter(torch.tensor(init_k))
