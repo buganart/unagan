@@ -950,8 +950,8 @@ if __name__ == "__main__":
                 output_folder=output_dir,
                 seed=123,
                 duration=10,
-                melgan_run_id=None,
-                unagan_run_id=None,
+                melgan_run_id=melgan_run_id,
+                unagan_run_id=wandb.run.id,
             )
             # log to wandb
             samples = []
