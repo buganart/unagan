@@ -604,19 +604,31 @@ if __name__ == "__main__":
 
     data_dir = "./training_data/exp_data"
 
-    melgan_run_id = args.melgan_run_id
-    if melgan_run_id == "":
-        melgan_run_id = None
+    log_num_samples = args.log_num_samples
+    wav_generate_dir = args.wav_generate_dir
 
     model_id = args.model_id
     if model_id:
         api = wandb.Api()
         previous_run = api.run(f"demiurge/unagan/{model_id}")
         args = argparse.Namespace(**previous_run.config)
+
     if hasattr(args, "log_num_samples"):
         log_num_samples = args.log_num_samples
     else:
-        log_num_samples = 1
+        args.log_num_samples = log_num_samples
+
+    if hasattr(args, "melgan_run_id"):
+        melgan_run_id = args.melgan_run_id
+        if melgan_run_id == "":
+            melgan_run_id = None
+    else:
+        melgan_run_id = None
+
+    if hasattr(args, "wav_generate_dir"):
+        wav_generate_dir = args.wav_generate_dir
+    else:
+        args.wav_generate_dir = wav_generate_dir
 
     feat_dim = args.feat_dim
     z_dim = args.z_dim

@@ -432,22 +432,23 @@ class TrainingManager(object):
         for name, network, optimizer in zip(self.names, self.networks, self.optimizers):
             latest_file_success = False
             latest_file_path = os.path.join(
-                param_dir, "params.{}.latest.torch".format(name)
+                param_dir, "model/params.{}.latest.torch".format(name)
             )
             previous_file_path = os.path.join(
-                param_dir, "params.{}.previous.torch".format(name)
+                param_dir, "model/params.{}.previous.torch".format(name)
             )
 
             try:
-                wandb.restore("params.{}.latest.torch".format(name))
+                wandb.restore("model/params.{}.latest.torch".format(name))
                 load_model(latest_file_path, network, optimizer)
                 latest_file_success = True
-            except:
+            except Exception as e:
+                print(e)
                 # load prev success file in case latest file corrupted
                 print(
                     f"loading 'params.{name}.latest.torch' failed. Try previous weight file."
                 )
-                wandb.restore("params.{}.previous.torch".format(name))
+                wandb.restore("model/params.{}.previous.torch".format(name))
                 load_model(previous_file_path, network, optimizer)
                 latest_file_success = False
 
