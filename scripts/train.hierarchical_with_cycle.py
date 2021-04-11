@@ -613,8 +613,10 @@ if __name__ == "__main__":
         api = wandb.Api()
         previous_run = api.run(f"demiurge/unagan/{model_id}")
         args = argparse.Namespace(**previous_run.config)
-
-    log_num_samples = args.log_num_samples
+    if hasattr(args, "log_num_samples"):
+        log_num_samples = args.log_num_samples
+    else:
+        log_num_samples = 1
 
     feat_dim = args.feat_dim
     z_dim = args.z_dim
