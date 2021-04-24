@@ -174,7 +174,8 @@ def load_state_dict_fix_data_parallel(model, state_dict):
     # See https://discuss.pytorch.org/t/solved-keyerror-unexpected-key-module-encoder-embedding-weight-in-state-dict/1686/29 for more options.
     try:
         model.load_state_dict(state_dict)
-    except RuntimeError:
+    except RuntimeError as e:
+        print(e)
         print("Fixing model trained with DataParallel by removing .module prefix")
         state_dict = OrderedDict((k.split(".", 1)[1], v) for k, v in state_dict.items())
         model.load_state_dict(state_dict)
