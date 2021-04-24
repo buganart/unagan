@@ -332,7 +332,8 @@ def main(
     vocoder_state_dict = torch.load(vocoder_param_fp)
     try:
         vocoder.load_state_dict(vocoder_state_dict)
-    except RuntimeError:
+    except RuntimeError as e:
+        print(e)
         print("Fixing model by removing .module prefix")
         vocoder_state_dict = OrderedDict(
             (k.split(".", 1)[1], v) for k, v in vocoder_state_dict.items()
