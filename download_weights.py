@@ -19,9 +19,9 @@ MODEL_PATHS = {
         ("std.mel.npy", "std.mel.npy"),
     ],
     "melgan": [
-        ("args.yml", "vocoder/args.yml"),
+        # ("args.yml", "vocoder/args.yml"),
         ("best_netG.pt", "vocoder/params.pt"),
-        ("modules.py", "vocoder/modules.py"),
+        # ("modules.py", "vocoder/modules.py"),
     ],
 }
 
