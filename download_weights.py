@@ -23,6 +23,9 @@ MODEL_PATHS = {
         ("best_netG.pt", "vocoder/params.pt"),
         # ("modules.py", "vocoder/modules.py"),
     ],
+    "hifigan": [
+        ("g_latest", "vocoder/g"),
+    ],
 }
 
 
@@ -71,6 +74,7 @@ def main(
     model_dir,
     melgan_run_id=None,
     unagan_run_id=None,
+    hifigan_run_id=None,
 ):
     model_dir.mkdir(parents=True, exist_ok=True)
     wandb.login()
@@ -81,10 +85,13 @@ def main(
     if unagan_run_id:
         run = api.run(f"demiurge/unagan/{unagan_run_id}")
         download_files_from_run(run, model_dir, MODEL_PATHS["unagan"])
+    if hifigan_run_id:
+        run = api.run(f"demiurge/hifi-gan/{hifigan_run_id}")
+        download_files_from_run(run, model_dir, MODEL_PATHS["hifigan"])
 
-    if (not melgan_run_id) and (not unagan_run_id):
+    if (not melgan_run_id) and (not unagan_run_id) and (not hifigan_run_id):
         print(
-            "melgan_run_id and unagan_run_id are not set. No files will be downloaded."
+            "melgan_run_id, unagan_run_id, and hifigan_run_id are not set. No files will be downloaded."
         )
 
 

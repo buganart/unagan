@@ -212,12 +212,17 @@ def main(
     seed=123,
     melgan_run_id=None,
     unagan_run_id=None,
+    hifigan_run_id=None,
 ):
+
+    if melgan_run_id and hifigan_run_id:
+        raise Exception("Can only set one of [melgan_run_id, hifigan_run_id], not both")
 
     download_weights.main(
         model_dir=Path("models/custom"),
         melgan_run_id=melgan_run_id,
         unagan_run_id=unagan_run_id,
+        hifigan_run_id=hifigan_run_id,
     )
     # ### Data type ###
     # assert data_type in ["singing", "speech", "piano", "violin"]
@@ -254,7 +259,7 @@ def main(
 
     # also save to all_generated_audio_dir is the folder exists,
     # but do not save if in unagan training (both run id None)
-    if melgan_run_id is None and unagan_run_id is None:
+    if melgan_run_id is None and unagan_run_id is None and hifigan_run_id is None:
         all_generated_audio_dir = None
     else:
         try:
@@ -279,11 +284,12 @@ def main(
     previous_run = api.run(f"demiurge/unagan/{unagan_run_id}")
     unagan_config = Namespace(**previous_run.config)
 
+    ################# unagan config parameters ##################
     z_dim = unagan_config.z_dim
     z_scale_factors = unagan_config.z_scale_factors
     z_total_scale_factor = np.prod(z_scale_factors)
-
     feat_dim = unagan_config.feat_dim
+    ##################
 
     param_fp = f"models/{data_type}/params.generator.{arch_type}.pt"
 
@@ -298,63 +304,99 @@ def main(
 
     ###############################################################
     ### Vocoder info ###
-    api = wandb.Api()
-    previous_run = api.run(f"demiurge/melgan/{melgan_run_id}")
-    melgan_config = Namespace(**previous_run.config)
 
-    hop_length = 256
-    sampling_rate = 44100
-    n_mel_channels = 80
-    ngf = 32
-    n_residual_layers = 3
+    ### MELGAN ###
+    if melgan_run_id:
+        api = wandb.Api()
+        previous_run = api.run(f"demiurge/melgan/{melgan_run_id}")
+        melgan_config = Namespace(**previous_run.config)
 
-    if hasattr(melgan_config, "hop_length"):
-        hop_length = melgan_config.hop_length
-    if hasattr(melgan_config, "sampling_rate"):
-        sampling_rate = melgan_config.sampling_rate
-    if hasattr(melgan_config, "n_mel_channels"):
-        n_mel_channels = melgan_config.n_mel_channels
-    if hasattr(melgan_config, "ngf"):
-        ngf = melgan_config.ngf
-    if hasattr(melgan_config, "n_residual_layers"):
-        n_residual_layers = melgan_config.n_residual_layers
+        ################# melgan config parameters ##################
+        # melgan only parameters
+        n_mel_channels = 80
+        ngf = 32
+        n_residual_layers = 3
 
-    ########################
+        # also applied to unagan generate
+        sampling_rate = 44100
+        hop_length = 256
 
-    # ### Vocoder ###
-    vocoder_model_dir = Path("models") / data_type / "vocoder"
-    # sys.path.append(str(vocoder_model_dir))
-    # import modules
+        if n_mel_channels != feat_dim:
+            print(
+                f"Warning!!! melgan n_mel_channels {n_mel_channels} != unagan feat_dim {feat_dim}"
+            )
 
-    if data_type == "speech":
-        vocoder_name = "OriginalGenerator"
-    else:
-        vocoder_name = "GRUGenerator"
-    MelGAN = getattr(melgan_models, vocoder_name)
-    vocoder = MelGAN(n_mel_channels, ngf, n_residual_layers)
-    vocoder.eval()
+        if hasattr(melgan_config, "hop_length"):
+            hop_length = melgan_config.hop_length
+        if hasattr(melgan_config, "sampling_rate"):
+            sampling_rate = melgan_config.sampling_rate
+        if hasattr(melgan_config, "n_mel_channels"):
+            n_mel_channels = melgan_config.n_mel_channels
+        if hasattr(melgan_config, "ngf"):
+            ngf = melgan_config.ngf
+        if hasattr(melgan_config, "n_residual_layers"):
+            n_residual_layers = melgan_config.n_residual_layers
 
-    vocoder_param_fp = vocoder_model_dir / "params.pt"
-    vocoder_state_dict = torch.load(vocoder_param_fp)
-    try:
-        vocoder.load_state_dict(vocoder_state_dict)
-    except RuntimeError as e:
-        print(e)
-        print("Fixing model by removing .module prefix")
-        vocoder_state_dict = OrderedDict(
-            (k.split(".", 1)[1], v) for k, v in vocoder_state_dict.items()
-        )
-        vocoder.load_state_dict(vocoder_state_dict)
+        ########################
 
-    if gid >= 0:
-        vocoder = vocoder.cuda(gid)
+        # ### Vocoder Model ###
+        vocoder_model_dir = Path("models") / data_type / "vocoder"
+
+        if data_type == "speech":
+            vocoder_name = "OriginalGenerator"
+        else:
+            vocoder_name = "GRUGenerator"
+        MelGAN = getattr(melgan_models, vocoder_name)
+        vocoder = MelGAN(n_mel_channels, ngf, n_residual_layers)
+        vocoder.eval()
+
+        vocoder_param_fp = vocoder_model_dir / "params.pt"
+        vocoder_state_dict = torch.load(vocoder_param_fp)
+        try:
+            vocoder.load_state_dict(vocoder_state_dict)
+        except RuntimeError as e:
+            print(e)
+            print("Fixing model by removing .module prefix")
+            vocoder_state_dict = OrderedDict(
+                (k.split(".", 1)[1], v) for k, v in vocoder_state_dict.items()
+            )
+            vocoder.load_state_dict(vocoder_state_dict)
+
+        if gid >= 0:
+            vocoder = vocoder.cuda(gid)
+
+    ### HIFI-GAN ###
+
+    if hifigan_run_id:
+        api = wandb.Api()
+        previous_run = api.run(f"demiurge/hifi-gan/{hifigan_run_id}")
+        hifigan_config = Namespace(**previous_run.config)
+
+        # parameters applied to unagan generate
+        sampling_rate = 44100
+        hop_length = 256
+        if hasattr(hifigan_config, "hop_size"):
+            hop_length = hifigan_config.hop_size
+        if hasattr(hifigan_config, "sampling_rate"):
+            sampling_rate = hifigan_config.sampling_rate
+
+        vocoder_model_dir = Path("models") / data_type / "vocoder"
+        vocoder = hifi_models.Generator(hifigan_config)
+        vocoder.eval()
+
+        vocoder_state_dict = torch.load(vocoder_model_dir / "g")
+        vocoder.load_state_dict(vocoder_state_dict["generator"])
+
+        if gid >= 0:
+            vocoder = vocoder.cuda(gid)
+
     ###################################################################
 
     # ### Generator ###
     if arch_type == "nonhierarchical":
-        generator = NonHierarchicalGenerator(n_mel_channels, z_dim)
+        generator = NonHierarchicalGenerator(feat_dim, z_dim)
     elif arch_type.startswith("hierarchical"):
-        generator = HierarchicalGenerator(n_mel_channels, z_dim, z_scale_factors)
+        generator = HierarchicalGenerator(feat_dim, z_dim, z_scale_factors)
 
     generator.eval()
     for p in generator.parameters():
@@ -375,6 +417,9 @@ def main(
 
     if unagan_run_id is not None:
         filename_base += "_" + unagan_run_id
+
+    if hifigan_run_id is not None:
+        filename_base += "_" + hifigan_run_id
 
     num_frames = int(np.ceil(duration * (sampling_rate / hop_length)))
 
@@ -406,7 +451,7 @@ def main(
                 audio = audio.squeeze().cpu().numpy()
 
         # keep generated audio as array to log to wandb
-        if melgan_run_id is None and unagan_run_id is None:
+        if melgan_run_id is None and unagan_run_id is None and hifigan_run_id is None:
             audio_array.append(audio)
         else:
             # Save to wav
