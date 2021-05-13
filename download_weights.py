@@ -79,8 +79,7 @@ def main(
         run = api.run(f"demiurge/melgan/{melgan_run_id}")
         download_files_from_run(run, model_dir, MODEL_PATHS["melgan"])
     if unagan_run_id:
-        run_ids["unagan"] = unagan_run_id
-        run = api.run(f"demiurge/unagan/{run_id}")
+        run = api.run(f"demiurge/unagan/{unagan_run_id}")
         download_files_from_run(run, model_dir, MODEL_PATHS["unagan"])
 
     if (not melgan_run_id) and (not unagan_run_id):
