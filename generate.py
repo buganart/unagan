@@ -17,6 +17,14 @@ import torch.nn.functional as F
 
 from datetime import datetime
 
+import download_weights
+
+# melgan
+import melgan_models
+
+# hifigan
+import hifi_models
+
 
 def read_yaml(fp):
     with open(fp) as file:
@@ -197,8 +205,6 @@ class NonHierarchicalGenerator(nn.Module):
 
 
 def main(
-    data_type="custom",
-    arch_type="hc",
     output_folder=None,
     duration=10,
     num_samples=5,
@@ -208,25 +214,33 @@ def main(
     unagan_run_id=None,
 ):
 
+    download_weights.main(
+        model_dir=Path("models/custom"),
+        melgan_run_id=melgan_run_id,
+        unagan_run_id=unagan_run_id,
+    )
     # ### Data type ###
     # assert data_type in ["singing", "speech", "piano", "violin"]
 
     # ### Architecture type ###
-    if data_type == "singing":
-        assert arch_type in ["nh", "h", "hc"]
-    elif data_type == "speech":
-        assert arch_type in ["h", "hc"]
-    elif data_type == "piano":
-        assert arch_type in ["hc"]
-    elif data_type == "violin":
-        assert arch_type in ["hc"]
+    # if data_type == "singing":
+    #     assert arch_type in ["nh", "h", "hc"]
+    # elif data_type == "speech":
+    #     assert arch_type in ["h", "hc"]
+    # elif data_type == "piano":
+    #     assert arch_type in ["hc"]
+    # elif data_type == "violin":
+    #     assert arch_type in ["hc"]
 
-    if arch_type == "nh":
-        arch_type = "nonhierarchical"
-    elif arch_type == "h":
-        arch_type = "hierarchical"
-    elif arch_type == "hc":
-        arch_type = "hierarchical_with_cycle"
+    # if arch_type == "nh":
+    #     arch_type = "nonhierarchical"
+    # elif arch_type == "h":
+    #     arch_type = "hierarchical"
+    # elif arch_type == "hc":
+    #     arch_type = "hierarchical_with_cycle"
+
+    data_type = "custom"
+    arch_type = "hierarchical_with_cycle"
 
     # ### Model type ###
     model_type = f"{data_type}.{arch_type}"
@@ -282,49 +296,41 @@ def main(
         mean = mean.cuda(gid)
         std = std.cuda(gid)
 
-    # ### Vocoder info ###
-    vocoder_dir = Path("models") / data_type / "vocoder"
-    vocoder_config_fp = vocoder_dir / "args.yml"
-    vocoder_config = read_yaml(vocoder_config_fp)
+    ###############################################################
+    ### Vocoder info ###
+    api = wandb.Api()
+    previous_run = api.run(f"demiurge/melgan/{melgan_run_id}")
+    melgan_config = Namespace(**previous_run.config)
 
-    # ### Import ###
-    # sys.path.append('..')
-
-    # ### Vocoder settings ###
     hop_length = 256
-    sampling_rate = vocoder_config.sampling_rate
-    n_mel_channels = vocoder_config.n_mel_channels
-    ngf = vocoder_config.ngf
-    n_residual_layers = vocoder_config.n_residual_layers
-    sr = sampling_rate
+    sampling_rate = 44100
+    n_mel_channels = 80
+    ngf = 32
+    n_residual_layers = 3
 
-    num_frames = int(np.ceil(duration * (sr / hop_length)))
+    if hasattr(melgan_config, "hop_length"):
+        hop_length = melgan_config.hop_length
+    if hasattr(melgan_config, "sampling_rate"):
+        sampling_rate = melgan_config.sampling_rate
+    if hasattr(melgan_config, "n_mel_channels"):
+        n_mel_channels = melgan_config.n_mel_channels
+    if hasattr(melgan_config, "ngf"):
+        ngf = melgan_config.ngf
+    if hasattr(melgan_config, "n_residual_layers"):
+        n_residual_layers = melgan_config.n_residual_layers
 
-    # ### Generator ###
-    if arch_type == "nonhierarchical":
-        generator = NonHierarchicalGenerator(n_mel_channels, z_dim)
-    elif arch_type.startswith("hierarchical"):
-        generator = HierarchicalGenerator(n_mel_channels, z_dim, z_scale_factors)
-
-    generator.eval()
-    for p in generator.parameters():
-        p.requires_grad = False
-
-    manager.load_model(param_fp, generator, device_id="cpu")
-
-    if gid >= 0:
-        generator = generator.cuda(gid)
+    ########################
 
     # ### Vocoder ###
     vocoder_model_dir = Path("models") / data_type / "vocoder"
-    sys.path.append(str(vocoder_model_dir))
-    import modules
+    # sys.path.append(str(vocoder_model_dir))
+    # import modules
 
     if data_type == "speech":
         vocoder_name = "OriginalGenerator"
     else:
         vocoder_name = "GRUGenerator"
-    MelGAN = getattr(modules, vocoder_name)
+    MelGAN = getattr(melgan_models, vocoder_name)
     vocoder = MelGAN(n_mel_channels, ngf, n_residual_layers)
     vocoder.eval()
 
@@ -342,6 +348,22 @@ def main(
 
     if gid >= 0:
         vocoder = vocoder.cuda(gid)
+    ###################################################################
+
+    # ### Generator ###
+    if arch_type == "nonhierarchical":
+        generator = NonHierarchicalGenerator(n_mel_channels, z_dim)
+    elif arch_type.startswith("hierarchical"):
+        generator = HierarchicalGenerator(n_mel_channels, z_dim, z_scale_factors)
+
+    generator.eval()
+    for p in generator.parameters():
+        p.requires_grad = False
+
+    manager.load_model(param_fp, generator, device_id="cpu")
+
+    if gid >= 0:
+        generator = generator.cuda(gid)
 
     # ### Process ###
     torch.manual_seed(seed)
@@ -353,6 +375,8 @@ def main(
 
     if unagan_run_id is not None:
         filename_base += "_" + unagan_run_id
+
+    num_frames = int(np.ceil(duration * (sampling_rate / hop_length)))
 
     audio_array = []
     for ii in range(num_samples):
@@ -386,13 +410,13 @@ def main(
             audio_array.append(audio)
         else:
             # Save to wav
-            sf.write(out_fp_wav, audio, sr)
+            sf.write(out_fp_wav, audio, sampling_rate)
             # Save also to all_generated_audio_dir
             if all_generated_audio_dir:
                 out2_fp_wav = (
                     Path(all_generated_audio_dir) / f"{filename_base}_sample{ii}.wav"
                 )
-                sf.write(out2_fp_wav, audio, sr)
+                sf.write(out2_fp_wav, audio, sampling_rate)
     return audio_array, sampling_rate
 
 

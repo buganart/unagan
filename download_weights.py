@@ -68,26 +68,25 @@ def download_files_from_run(run, model_dir, paths):
 
 
 def main(
-    melgan_run_id,
-    unagan_run_id,
     model_dir,
+    melgan_run_id=None,
+    unagan_run_id=None,
 ):
     model_dir.mkdir(parents=True, exist_ok=True)
-    run_ids = {"melgan": melgan_run_id, "unagan": unagan_run_id}
-
-    run_ids = {}
-    if melgan_run_id:
-        run_ids["melgan"] = melgan_run_id
-    if unagan_run_id:
-        run_ids["unagan"] = unagan_run_id
-
     wandb.login()
     api = wandb.Api()
+    if melgan_run_id:
+        run = api.run(f"demiurge/melgan/{melgan_run_id}")
+        download_files_from_run(run, model_dir, MODEL_PATHS["melgan"])
+    if unagan_run_id:
+        run_ids["unagan"] = unagan_run_id
+        run = api.run(f"demiurge/unagan/{run_id}")
+        download_files_from_run(run, model_dir, MODEL_PATHS["unagan"])
 
-    for model in run_ids.keys():
-        run_id = run_ids[model]
-        run = api.run(f"demiurge/{model}/{run_id}")
-        download_files_from_run(run, model_dir, MODEL_PATHS[model])
+    if (not melgan_run_id) and (not unagan_run_id):
+        print(
+            "melgan_run_id and unagan_run_id are not set. No files will be downloaded."
+        )
 
 
 if __name__ == "__main__":
