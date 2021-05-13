@@ -49,14 +49,11 @@ def download_files_from_run(run, model_dir, paths):
         except KeyError:
             raise ValueError(f"File {filename} not found in {run}.")
 
+        print(f" {filename}: {wandb_files}")
         if len(wandb_files) > 1:
-            # raise ValueError(
-            #     f"Run {run} has more than one file with filename"
-            #     f" {filename}: {wandb_files}"
-            # )
-            print(f"Run {run} has more than one file with filename")
-            print(f" {filename}: {wandb_files}")
-
+            print(
+                f"Run {run} has more than one file with filename, selected the first one."
+            )
         wandb_file = wandb_files[0]
         wandb_path = wandb_file.name
 
