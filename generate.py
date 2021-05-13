@@ -218,6 +218,9 @@ def main(
     if melgan_run_id and hifigan_run_id:
         raise Exception("Can only set one of [melgan_run_id, hifigan_run_id], not both")
 
+    if not unagan_run_id:
+        raise Exception("unagan_run_id should not be empty")
+
     download_weights.main(
         model_dir=Path("models/custom"),
         melgan_run_id=melgan_run_id,
@@ -259,7 +262,7 @@ def main(
 
     # also save to all_generated_audio_dir is the folder exists,
     # but do not save if in unagan training (both run id None)
-    if melgan_run_id is None and unagan_run_id is None and hifigan_run_id is None:
+    if not unagan_run_id:
         all_generated_audio_dir = None
     else:
         try:
@@ -412,14 +415,14 @@ def main(
     # information for filename
     filename_base = datetime.utcnow().strftime("%Y-%m-%d_%H-%M")
 
-    if melgan_run_id is not None:
-        filename_base += "_" + melgan_run_id
+    if melgan_run_id:
+        filename_base += "_mel-" + melgan_run_id
 
-    if unagan_run_id is not None:
-        filename_base += "_" + unagan_run_id
+    if unagan_run_id:
+        filename_base += "_una-" + unagan_run_id
 
-    if hifigan_run_id is not None:
-        filename_base += "_" + hifigan_run_id
+    if hifigan_run_id:
+        filename_base += "_hifi-" + hifigan_run_id
 
     num_frames = int(np.ceil(duration * (sampling_rate / hop_length)))
 
@@ -451,7 +454,7 @@ def main(
                 audio = audio.squeeze().cpu().numpy()
 
         # keep generated audio as array to log to wandb
-        if melgan_run_id is None and unagan_run_id is None and hifigan_run_id is None:
+        if not unagan_run_id:
             audio_array.append(audio)
         else:
             # Save to wav
