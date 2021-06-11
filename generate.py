@@ -459,6 +459,7 @@ def main(
         else:
             # Save to wav
             sf.write(out_fp_wav, audio, sampling_rate)
+            audio_array.append(out_fp_wav)
             # Save also to all_generated_audio_dir
             if all_generated_audio_dir:
                 out2_fp_wav = (
